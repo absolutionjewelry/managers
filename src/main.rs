@@ -19,7 +19,7 @@ async fn main() -> anyhow::Result<()> {
     let cors = CorsOptions::default().to_cors().unwrap();
 
     rocket::build()
-        .mount("/api/auth", routes![api::auth::login, api::auth::logout])
+        .mount("/api/auth", routes![api::authentications::login, api::authentications::logout, api::authentications::register])
         .manage(pool)
         .attach(cors)
         .launch()

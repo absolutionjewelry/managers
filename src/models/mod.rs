@@ -1,3 +1,2 @@
-pub mod auth;
-pub mod session;
+pub mod authentication;
 pub mod user;

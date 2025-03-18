@@ -1,19 +1,19 @@
 use rocket::{Request, request::{FromRequest, Outcome}};
 use serde::{Deserialize, Serialize};
-use crate::models::auth::AuthError;
-use crate::models::session::Session;
-use time::OffsetDateTime;
+use crate::{find_one_resource_where_fields, models::authentication::AuthenticationError};
+use crate::models::authentication::Authentication;
+use time::{OffsetDateTime, format_description::well_known::Rfc3339};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(crate = "rocket::serde")]
 pub struct Token {
     pub user_id: String,
     pub token: String,
-    pub expires_at: OffsetDateTime,
+    pub expires_at: String,
 }
 
 impl Token {
-    pub fn new(user_id: String, token: String, expires_at: OffsetDateTime) -> Self {
+    pub fn new(user_id: String, token: String, expires_at: String) -> Self {
         Self { user_id, token, expires_at }
     }
 }
@@ -28,11 +28,11 @@ pub struct VerifiedToken {
 }
 
 impl VerifiedToken {
-    pub fn new(raw_token: String, user_id: String, expires_at: Option<OffsetDateTime>) -> Self {
-        Self { 
-            raw_token: Some(raw_token), 
-            user_id, 
-            expires_at: expires_at.map_or_else(String::new, |dt| dt.to_string())
+    pub fn new(raw_token: String, user_id: String, expires_at: Option<String>) -> Self {
+        Self {
+            raw_token: Some(raw_token),
+            user_id,
+            expires_at: expires_at.unwrap_or_default()
         }
     }
 
@@ -40,19 +40,19 @@ impl VerifiedToken {
         Token {
             user_id: self.user_id,
             token: self.raw_token.unwrap_or_default(),
-            expires_at: OffsetDateTime::now_utc(),
+            expires_at: self.expires_at,
         }
     }
 
-    pub async fn from_raw(raw_token: RawToken) -> Result<Self, AuthError> {
-        let session = match Session::find_by_id(raw_token.value.clone()).await {
-            Ok(session) => session,
-            Err(_) => return Err(AuthError::InvalidToken),
+    pub async fn from_raw(raw_token: RawToken) -> Result<Self, AuthenticationError> {
+        let authentication = match find_one_resource_where_fields!(Authentication, vec![("token", &raw_token.value)]).await {
+            Ok(authentication) => authentication,
+            Err(_) => return Err(AuthenticationError::InvalidToken),
         };
-        if session.expires_at.is_none() || session.expires_at.unwrap() < OffsetDateTime::now_utc() {
-            return Err(AuthError::TokenExpired);
+        if authentication.expires_at.is_none() || authentication.expires_at.as_ref().unwrap().to_string() < OffsetDateTime::now_utc().format(&Rfc3339).unwrap() {
+            return Err(AuthenticationError::TokenExpired);
         }
-        Ok(Self::new(raw_token.value, session.user_id, session.expires_at))
+        Ok(Self::new(raw_token.value, authentication.user_id, Some(authentication.expires_at.unwrap().clone())))
     }
 }
 

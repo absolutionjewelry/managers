@@ -1,3 +1,3 @@
 pub mod client;
-pub mod auth;
+pub mod authentications;
 pub mod token;
