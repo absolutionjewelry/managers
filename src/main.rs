@@ -1,3 +1,28 @@
-fn main() {
-    println!("Hello, world!");
+#[macro_use]
+extern crate rocket;
+
+use rocket_cors::CorsOptions;
+use sqlx::postgres::PgPoolOptions;
+use std::env;
+
+mod api;
+mod models;
+mod database;
+mod utils;
+
+#[rocket::main]
+async fn main() -> anyhow::Result<()> {
+    let database_url = env::var("DATABASE_URL");
+    let pool = PgPoolOptions::new()
+        .connect(&*database_url.unwrap())
+        .await?;
+    let cors = CorsOptions::default().to_cors().unwrap();
+
+    rocket::build()
+        .mount("/api/auth", routes![api::auth::login, api::auth::logout])
+        .manage(pool)
+        .attach(cors)
+        .launch()
+        .await?;
+    Ok(())
 }
