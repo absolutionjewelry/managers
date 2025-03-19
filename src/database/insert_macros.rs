@@ -16,8 +16,14 @@ macro_rules! insert_resource {
                 params.push(("id", &id));
             }
 
-            let fields = params.iter().map(|field| field.0.to_string()).collect::<Vec<String>>();
-            let values = params.iter().map(|field| field.1.to_string()).collect::<Vec<String>>();
+            let fields = params
+                .iter()
+                .map(|field| field.0.to_string())
+                .collect::<Vec<String>>();
+            let values = params
+                .iter()
+                .map(|field| field.1.to_string())
+                .collect::<Vec<String>>();
 
             let mut query = format!("INSERT INTO {} (", resource_name);
             for (i, field) in fields.iter().enumerate() {
@@ -28,7 +34,7 @@ macro_rules! insert_resource {
             }
             query.push_str(") VALUES (");
             for (i, _) in values.iter().enumerate() {
-                query.push_str(&format!("${}", i+1));
+                query.push_str(&format!("${}", i + 1));
                 if i < values.len() - 1 {
                     query.push_str(", ");
                 }

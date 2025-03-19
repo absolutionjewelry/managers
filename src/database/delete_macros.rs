@@ -2,10 +2,10 @@
 macro_rules! delete_resource_where_fields {
     ($resource:ty, $params:expr) => {{
         use crate::database::connection::get_connection;
+        use crate::database::traits::DatabaseResource;
+        use anyhow::anyhow;
         use pluralizer::pluralize;
         use time::OffsetDateTime;
-        use anyhow::anyhow;
-        use crate::database::traits::DatabaseResource;
         async {
             let archived_at = OffsetDateTime::now_utc();
             let archived_at_str = archived_at.to_string();
@@ -15,12 +15,22 @@ macro_rules! delete_resource_where_fields {
 
             let params = $params.clone();
 
-            let fields = params.iter().map(|field| field.0.to_string()).collect::<Vec<String>>();
-            let values = params.iter().map(|field| field.1.to_string()).collect::<Vec<String>>();
+            let fields = params
+                .iter()
+                .map(|field| field.0.to_string())
+                .collect::<Vec<String>>();
+            let values = params
+                .iter()
+                .map(|field| field.1.to_string())
+                .collect::<Vec<String>>();
 
             let mut query: String;
             if <$resource as DatabaseResource>::is_archivable() {
-                query = format!("UPDATE {} SET archived_at = ${} WHERE ", resource_name, fields.len() + 1);
+                query = format!(
+                    "UPDATE {} SET archived_at = ${} WHERE ",
+                    resource_name,
+                    fields.len() + 1
+                );
             } else {
                 query = format!("DELETE FROM {} WHERE ", resource_name);
             }

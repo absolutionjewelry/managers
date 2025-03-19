@@ -7,4 +7,5 @@ pub trait DatabaseResource {
 
     fn has_id() -> bool;
     fn is_archivable() -> bool;
+    fn is_updatable() -> bool;
 }
