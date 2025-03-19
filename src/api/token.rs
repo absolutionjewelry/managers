@@ -1,6 +1,6 @@
 use crate::models::authentication::Authentication;
+use crate::utils::time::{deserialize_offset_date_time, serialize_offset_date_time};
 use crate::{find_one_resource_where_fields, models::authentication::AuthenticationError};
-use crate::utils::time::{serialize_offset_date_time, deserialize_offset_date_time};
 use rocket::{
     request::{FromRequest, Outcome},
     Request,
@@ -43,7 +43,10 @@ impl VerifiedToken {
         Token {
             user_id: self.user_id,
             token: self.raw_token.unwrap_or_default(),
-            expires_at: self.expires_at.map(|dt| dt.format(&Rfc3339).unwrap()).unwrap_or_default(),
+            expires_at: self
+                .expires_at
+                .map(|dt| dt.format(&Rfc3339).unwrap())
+                .unwrap_or_default(),
         }
     }
 

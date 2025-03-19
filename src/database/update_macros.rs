@@ -34,7 +34,10 @@ macro_rules! update_resource {
                 }
             }
             if <$resource as DatabaseResource>::is_updatable() {
-                query.push_str(&format!(", updated_at = CAST(${} AS TIMESTAMP)", fields.len() + 1));
+                query.push_str(&format!(
+                    ", updated_at = CAST(${} AS TIMESTAMP)",
+                    fields.len() + 1
+                ));
             }
             query.push_str(&format!(" WHERE id = ${}", fields.len() + 1));
             query.push_str(&format!(" RETURNING *"));

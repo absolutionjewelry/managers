@@ -10,7 +10,7 @@ use rocket::serde::json::Json;
 use rocket::serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
-use time::{format_description::well_known::Rfc3339, OffsetDateTime, Duration};
+use time::{format_description::well_known::Rfc3339, Duration, OffsetDateTime};
 use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -109,7 +109,7 @@ pub async fn login(authentication_request: Json<AuthenticationRequest>) -> statu
                             AuthenticationError::SessionUpdateFailed.to_string(),
                         ))
                         .unwrap(),
-                    )
+                    );
                 }
             }
         }
@@ -119,7 +119,8 @@ pub async fn login(authentication_request: Json<AuthenticationRequest>) -> statu
                 Authentication,
                 vec![("user_id", &user_id), ("token", &token)]
             )
-            .await {
+            .await
+            {
                 Ok(authentication) => status::Custom(
                     Status::Ok,
                     serde_json::to_value(AuthenticationResponse::success(
