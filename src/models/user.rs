@@ -23,6 +23,10 @@ impl DatabaseResource for User {
     fn has_id() -> bool {
         true
     }
+
+    fn is_archivable() -> bool {
+        true
+    }
 }
 
 

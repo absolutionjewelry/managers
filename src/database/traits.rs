@@ -6,4 +6,5 @@ pub trait DatabaseResource {
         Self: Sized;
 
     fn has_id() -> bool;
+    fn is_archivable() -> bool;
 }

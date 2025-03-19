@@ -52,6 +52,10 @@ impl DatabaseResource for Authentication {
     fn has_id() -> bool {
         true
     }
+
+    fn is_archivable() -> bool {
+        false
+    }
 }
 
 fn serialize_offset_date_time<S>(dt: &Option<OffsetDateTime>, serializer: S) -> Result<S::Ok, S::Error>
