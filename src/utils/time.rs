@@ -2,6 +2,7 @@ use serde::{self, Deserialize};
 use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
 
+#[allow(unused)]
 pub fn serialize_offset_date_time<S>(
     date_time: &Option<OffsetDateTime>,
     serializer: S,
@@ -15,6 +16,7 @@ where
     }
 }
 
+#[allow(unused)]
 pub fn deserialize_offset_date_time<'de, D>(
     deserializer: D,
 ) -> Result<Option<OffsetDateTime>, D::Error>

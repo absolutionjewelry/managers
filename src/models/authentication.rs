@@ -48,6 +48,10 @@ impl DatabaseResource for Authentication {
     fn from_row(row: &PgRow) -> Result<Self, SqlxError> {
         Ok(Authentication { id: row.get("id"), user_id: row.get("user_id"), token: row.get("token"), expires_at: row.get("expires_at"), created_at: row.get("created_at") })
     }
+
+    fn has_id() -> bool {
+        true
+    }
 }
 
 fn serialize_offset_date_time<S>(dt: &Option<OffsetDateTime>, serializer: S) -> Result<S::Ok, S::Error>

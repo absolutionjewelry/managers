@@ -12,12 +12,6 @@ pub struct Token {
     pub expires_at: String,
 }
 
-impl Token {
-    pub fn new(user_id: String, token: String, expires_at: String) -> Self {
-        Self { user_id, token, expires_at }
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(crate = "rocket::serde", rename_all = "camelCase")]
 pub struct VerifiedToken {

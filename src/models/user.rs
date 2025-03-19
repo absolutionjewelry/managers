@@ -19,6 +19,10 @@ impl DatabaseResource for User {
     fn from_row(row: &PgRow) -> Result<Self, Error> {
         Ok(User { id: row.get("id"), first_name: row.get("first_name"), last_name: row.get("last_name"), username: row.get("username"), password: row.get("user_password"), admin_status: row.get("admin_status"), created_at: row.get("created_at"), archived_at: row.get("archived_at") })
     }
+
+    fn has_id() -> bool {
+        true
+    }
 }
 
 
