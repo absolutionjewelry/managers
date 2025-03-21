@@ -12,6 +12,7 @@ pub struct User {
     pub last_name: Option<String>,
     pub username: Option<String>,
 
+    #[allow(dead_code)]
     #[serde(skip_serializing, skip_deserializing)]
     pub password: Option<String>,
 

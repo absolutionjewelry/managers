@@ -39,17 +39,6 @@ impl VerifiedToken {
         }
     }
 
-    pub fn to_token(self) -> Token {
-        Token {
-            user_id: self.user_id,
-            token: self.raw_token.unwrap_or_default(),
-            expires_at: self
-                .expires_at
-                .map(|dt| dt.format(&Rfc3339).unwrap())
-                .unwrap_or_default(),
-        }
-    }
-
     pub async fn from_raw(raw_token: RawToken) -> Result<Self, AuthenticationError> {
         let authentication = match find_one_resource_where_fields!(
             Authentication,

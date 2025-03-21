@@ -50,3 +50,5 @@ CREATE INDEX IF NOT EXISTS idx_store_roles_id ON store_roles(id);
 CREATE INDEX IF NOT EXISTS idx_store_roles_role_name ON store_roles(role_name);
 CREATE INDEX IF NOT EXISTS idx_store_roles_role_description ON store_roles(role_description);
 CREATE INDEX IF NOT EXISTS idx_store_roles_created_at ON store_roles(created_at);
+CREATE INDEX IF NOT EXISTS idx_store_roles_updated_at ON store_roles(updated_at);
+CREATE INDEX IF NOT EXISTS idx_store_roles_archived_at ON store_roles(archived_at);

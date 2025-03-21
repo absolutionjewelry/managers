@@ -3,7 +3,6 @@ macro_rules! find_all_resources_where_fields {
     ($resource:ty, $params:expr) => {{
         use crate::database::{connection::get_connection, traits::DatabaseResource};
         use pluralizer::pluralize;
-        use sqlx::{self, Pool, Postgres};
 
         async {
             let resource_name = pluralize(&stringify!($resource).to_lowercase(), 2, false);
@@ -26,7 +25,7 @@ macro_rules! find_all_resources_where_fields {
             }
 
             let mut query = sqlx::query(&query);
-            for (i, value) in values.iter().enumerate() {
+            for (_, value) in values.iter().enumerate() {
                 query = query.bind(value);
             }
             match query.fetch_all(&pool).await {

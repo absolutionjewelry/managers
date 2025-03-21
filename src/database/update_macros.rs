@@ -3,7 +3,7 @@ macro_rules! update_resource {
     ($resource:ty, $id:expr, $params:expr) => {{
         use crate::database::{connection::get_connection, traits::DatabaseResource};
         use pluralizer::pluralize;
-        use time::OffsetDateTime;
+        use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 
         async {
             let updated_at = OffsetDateTime::now_utc().format(&Rfc3339).unwrap();
