@@ -1,0 +1,52 @@
+-- Add down migration script here
+DROP INDEX IF EXISTS idx_store_user_product_variation_saves_archived_at;
+DROP INDEX IF EXISTS idx_store_user_product_variation_saves_updated_at;
+DROP INDEX IF EXISTS idx_store_user_product_variation_saves_created_at;
+DROP INDEX IF EXISTS idx_store_user_product_variation_saves_quantity;
+DROP INDEX IF EXISTS idx_store_user_product_variation_saves_user_id;
+DROP INDEX IF EXISTS idx_store_user_product_variation_saves_store_product_variation_id;
+DROP INDEX IF EXISTS idx_store_user_product_variation_saves_store_user_product_save_id;
+DROP INDEX IF EXISTS idx_store_user_product_variation_saves_store_id;
+DROP INDEX IF EXISTS idx_store_user_product_variation_saves_id;
+DROP TABLE IF EXISTS store_user_product_variation_saves;
+
+DROP INDEX IF EXISTS idx_store_user_product_saves_archived_at;
+DROP INDEX IF EXISTS idx_store_user_product_saves_updated_at;
+DROP INDEX IF EXISTS idx_store_user_product_saves_created_at;
+DROP INDEX IF EXISTS idx_store_user_product_saves_store_product_id;
+DROP INDEX IF EXISTS idx_store_user_product_saves_store_user_cart_id;
+DROP INDEX IF EXISTS idx_store_user_product_saves_quantity;
+DROP INDEX IF EXISTS idx_store_user_product_saves_user_id;
+DROP INDEX IF EXISTS idx_store_user_product_saves_store_id;
+DROP INDEX IF EXISTS idx_store_user_product_saves_id;
+DROP TABLE IF EXISTS store_user_product_saves;
+
+DROP INDEX IF EXISTS idx_store_user_cart_product_variations_archived_at;
+DROP INDEX IF EXISTS idx_store_user_cart_product_variations_updated_at;
+DROP INDEX IF EXISTS idx_store_user_cart_product_variations_created_at;
+DROP INDEX IF EXISTS idx_store_user_cart_product_variations_quantity;
+DROP INDEX IF EXISTS idx_store_user_cart_product_variations_user_id;
+DROP INDEX IF EXISTS idx_store_user_cart_product_variations_store_product_variation_id;
+DROP INDEX IF EXISTS idx_store_user_cart_product_variations_store_user_cart_product_id;
+DROP INDEX IF EXISTS idx_store_user_cart_product_variations_store_id;
+DROP INDEX IF EXISTS idx_store_user_cart_product_variations_id;
+DROP TABLE IF EXISTS store_user_cart_product_variations;
+
+DROP INDEX IF EXISTS idx_store_user_cart_products_archived_at;
+DROP INDEX IF EXISTS idx_store_user_cart_products_updated_at;
+DROP INDEX IF EXISTS idx_store_user_cart_products_created_at;
+DROP INDEX IF EXISTS idx_store_user_cart_products_quantity;
+DROP INDEX IF EXISTS idx_store_user_cart_products_user_id;
+DROP INDEX IF EXISTS idx_store_user_cart_products_store_product_id;
+DROP INDEX IF EXISTS idx_store_user_cart_products_store_user_cart_id;
+DROP INDEX IF EXISTS idx_store_user_cart_products_store_id;
+DROP INDEX IF EXISTS idx_store_user_cart_products_id;
+DROP TABLE IF EXISTS store_user_cart_products;
+
+DROP INDEX IF EXISTS idx_store_user_carts_archived_at;
+DROP INDEX IF EXISTS idx_store_user_carts_updated_at;
+DROP INDEX IF EXISTS idx_store_user_carts_created_at;
+DROP INDEX IF EXISTS idx_store_user_carts_user_id;
+DROP INDEX IF EXISTS idx_store_user_carts_store_id;
+DROP INDEX IF EXISTS idx_store_user_carts_id;
+DROP TABLE IF EXISTS store_user_carts;

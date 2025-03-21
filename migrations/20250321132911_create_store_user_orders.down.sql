@@ -1,0 +1,114 @@
+-- Add down migration script here
+DROP INDEX IF EXISTS idx_store_user_order_assignments_assignment_status_type_id;
+DROP INDEX IF EXISTS idx_store_user_order_assignments_created_at;
+DROP INDEX IF EXISTS idx_store_user_order_assignments_updated_at;
+DROP INDEX IF EXISTS idx_store_user_order_assignments_archived_at;
+DROP INDEX IF EXISTS idx_store_user_order_assignments_store_user_order_id;
+DROP INDEX IF EXISTS idx_store_user_order_assignments_assigned_id
+DROP INDEX IF EXISTS idx_store_user_order_assignments_store_id;
+DROP INDEX IF EXISTS idx_store_user_order_assignments_user_id;
+DROP INDEX IF EXISTS idx_store_user_order_assignments_id;
+DROP TABLE IF EXISTS store_user_order_assignments;
+
+DROP INDEX IF EXISTS idx_store_user_order_payments_payment_status_type_id;
+DROP INDEX IF EXISTS idx_store_user_order_payments_created_at;
+DROP INDEX IF EXISTS idx_store_user_order_payments_updated_at;
+DROP INDEX IF EXISTS idx_store_user_order_payments_archived_at;
+DROP INDEX IF EXISTS idx_store_user_order_payments_store_user_order_id;
+DROP INDEX IF EXISTS idx_store_user_order_payments_store_user_order_id
+DROP INDEX IF EXISTS idx_store_user_order_payments_store_id;
+DROP INDEX IF EXISTS idx_store_user_order_payments_user_id;
+DROP INDEX IF EXISTS idx_store_user_order_payments_id;
+DROP TABLE IF EXISTS store_user_order_payments;
+
+DROP INDEX IF EXISTS idx_store_user_order_payment_status_types_id;
+DROP INDEX IF EXISTS idx_store_user_order_payment_status_types_store_id;
+DROP INDEX IF EXISTS idx_store_user_order_payment_status_types_payment_status_type_name;
+DROP INDEX IF EXISTS idx_store_user_order_payment_status_types_created_at;
+DROP INDEX IF EXISTS idx_store_user_order_payment_status_types_updated_at;
+DROP INDEX IF EXISTS idx_store_user_order_payment_status_types_archived_at;
+DROP TABLE IF EXISTS store_user_order_payment_status_types;
+
+DROP INDEX IF EXISTS idx_store_user_order_payment_types_id;
+DROP INDEX IF EXISTS idx_store_user_order_payment_types_store_id;
+DROP INDEX IF EXISTS idx_store_user_order_payment_types_payment_type_name;
+DROP INDEX IF EXISTS idx_store_user_order_payment_types_created_at;
+DROP INDEX IF EXISTS idx_store_user_order_payment_types_updated_at;
+DROP INDEX IF EXISTS idx_store_user_order_payment_types_archived_at;
+DROP TABLE IF EXISTS store_user_order_payment_types;
+
+DROP INDEX IF EXISTS idx_store_user_order_assignment_status_types_id;
+DROP INDEX IF EXISTS idx_store_user_order_assignment_status_types_store_id;
+DROP INDEX IF EXISTS idx_store_user_order_assignment_status_types_assignment_status_type_name;
+DROP INDEX IF EXISTS idx_store_user_order_assignment_status_types_created_at;
+DROP INDEX IF EXISTS idx_store_user_order_assignment_status_types_updated_at;
+DROP INDEX IF EXISTS idx_store_user_order_assignment_status_types_archived_at;
+DROP TABLE IF EXISTS store_user_order_assignment_status_types;
+
+DROP INDEX IF EXISTS idx_store_user_orders_id;
+DROP INDEX IF EXISTS idx_store_user_orders_store_id;
+DROP INDEX IF EXISTS idx_store_user_orders_user_id;
+DROP INDEX IF EXISTS idx_store_user_orders_store_user_cart_id;
+DROP INDEX IF EXISTS idx_store_user_orders_created_at;
+DROP INDEX IF EXISTS idx_store_user_orders_updated_at;
+DROP INDEX IF EXISTS idx_store_user_orders_archived_at;
+DROP TABLE IF EXISTS store_user_orders;
+
+DROP INDEX IF EXISTS idx_store_user_order_products_id;
+DROP INDEX IF EXISTS idx_store_user_order_products_store_id;
+DROP INDEX IF EXISTS idx_store_user_order_products_store_user_order_id;
+DROP INDEX IF EXISTS idx_store_user_order_products_store_product_id;
+DROP INDEX IF EXISTS idx_store_user_order_products_user_id;
+DROP INDEX IF EXISTS idx_store_user_order_products_quantity;
+DROP INDEX IF EXISTS idx_store_user_order_products_created_at;
+DROP INDEX IF EXISTS idx_store_user_order_products_updated_at;
+DROP INDEX IF EXISTS idx_store_user_order_products_archived_at;
+DROP TABLE IF EXISTS store_user_order_products;
+
+DROP INDEX IF EXISTS idx_store_user_order_product_variations_id;
+DROP INDEX IF EXISTS idx_store_user_order_product_variations_store_id;
+DROP INDEX IF EXISTS idx_store_user_order_product_variations_store_user_order_id;
+DROP INDEX IF EXISTS idx_store_user_order_product_variations_store_product_variation_id;
+DROP INDEX IF EXISTS idx_store_user_order_product_variations_user_id;
+DROP INDEX IF EXISTS idx_store_user_order_product_variations_quantity;
+DROP INDEX IF EXISTS idx_store_user_order_product_variations_created_at;
+DROP INDEX IF EXISTS idx_store_user_order_product_variations_updated_at;
+DROP INDEX IF EXISTS idx_store_user_order_product_variations_archived_at;
+DROP TABLE IF EXISTS store_user_order_product_variations;
+
+DROP INDEX IF EXISTS idx_store_user_order_comments_id;
+DROP INDEX IF EXISTS idx_store_user_order_comments_parent_id;
+DROP INDEX IF EXISTS idx_store_user_order_comments_store_id;
+DROP INDEX IF EXISTS idx_store_user_order_comments_store_user_order_id;
+DROP INDEX IF EXISTS idx_store_user_order_comments_user_id;
+DROP INDEX IF EXISTS idx_store_user_order_comments_created_at;
+DROP INDEX IF EXISTS idx_store_user_order_comments_updated_at;
+DROP INDEX IF EXISTS idx_store_user_order_comments_archived_at;
+DROP TABLE IF EXISTS store_user_order_comments;
+
+DROP INDEX IF EXISTS idx_store_user_order_status_types_id;
+DROP INDEX IF EXISTS idx_store_user_order_status_types_store_id;
+DROP INDEX IF EXISTS idx_store_user_order_status_types_status_type_name;
+DROP INDEX IF EXISTS idx_store_user_order_status_types_created_at;
+DROP INDEX IF EXISTS idx_store_user_order_status_types_updated_at;
+DROP INDEX IF EXISTS idx_store_user_order_status_types_archived_at;
+DROP TABLE IF EXISTS store_user_order_status_types;
+
+DROP INDEX IF EXISTS idx_store_user_order_statuses_id;
+DROP INDEX IF EXISTS idx_store_user_order_statuses_store_id;
+DROP INDEX IF EXISTS idx_store_user_order_statuses_store_user_order_id;
+DROP INDEX IF EXISTS idx_store_user_order_statuses_status_type_id;
+DROP INDEX IF EXISTS idx_store_user_order_statuses_user_id;
+DROP INDEX IF EXISTS idx_store_user_order_statuses_created_at;
+DROP INDEX IF EXISTS idx_store_user_order_statuses_updated_at;
+DROP INDEX IF EXISTS idx_store_user_order_statuses_archived_at;
+DROP TABLE IF EXISTS store_user_order_statuses;
+
+DROP INDEX IF EXISTS idx_store_user_order_notes_id;
+DROP INDEX IF EXISTS idx_store_user_order_notes_store_id;
+DROP INDEX IF EXISTS idx_store_user_order_notes_store_user_order_id;
+DROP INDEX IF EXISTS idx_store_user_order_notes_user_id;
+DROP INDEX IF EXISTS idx_store_user_order_notes_created_at;
+DROP INDEX IF EXISTS idx_store_user_order_notes_updated_at;
+DROP INDEX IF EXISTS idx_store_user_order_notes_archived_at;
+DROP TABLE IF EXISTS store_user_order_notes;
