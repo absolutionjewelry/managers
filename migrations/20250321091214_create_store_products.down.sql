@@ -1,0 +1,31 @@
+-- Add down migration script here
+DROP INDEX idx_store_products_variants_created_at;
+DROP INDEX idx_store_products_variants_store_product_variant_id;
+DROP INDEX idx_store_products_variants_store_product_id;
+DROP INDEX idx_store_products_variants_store_id;
+DROP TABLE store_products_variants;
+
+DROP INDEX idx_store_product_variants_archived_at;
+DROP INDEX idx_store_product_variants_updated_at;
+DROP INDEX idx_store_product_variants_created_at;
+DROP INDEX idx_store_product_variants_variant_base_quantity;
+DROP INDEX idx_store_product_variants_variant_base_price;
+DROP INDEX idx_store_product_variants_variant_base_cost;
+DROP INDEX idx_store_product_variants_variant_name;
+DROP INDEX idx_store_product_variants_store_id;
+DROP TABLE store_product_variants;
+
+DROP INDEX idx_store_products_variants_store_product_variant_id;
+DROP INDEX idx_store_products_variants_store_product_id;
+DROP INDEX idx_store_products_variants_store_id;
+DROP TABLE store_products_variants;
+
+DROP INDEX idx_store_products_archived_at;
+DROP INDEX idx_store_products_updated_at;
+DROP INDEX idx_store_products_created_at;
+DROP INDEX idx_store_products_product_base_quantity;
+DROP INDEX idx_store_products_product_base_price;
+DROP INDEX idx_store_products_product_base_cost;
+DROP INDEX idx_store_products_product_name;
+DROP INDEX idx_store_products_store_id;
+DROP TABLE store_products;
