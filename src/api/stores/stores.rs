@@ -11,6 +11,7 @@ use crate::{
 use rocket::http::Status;
 use rocket::response::status;
 use rocket::serde::json::{Json, Value};
+use crate::database::values::DatabaseValue;
 
 #[get("/")]
 pub async fn get_stores(token: RawToken) -> status::Custom<Value> {
@@ -29,8 +30,8 @@ pub async fn get_stores(token: RawToken) -> status::Custom<Value> {
     };
 
     let user_id = token.user_id;
-
-    match find_all_resources_where_fields!(Store, vec![("owner_id", &user_id)]).await {
+    let params = vec![("owner_id", &user_id)];
+    match find_all_resources_where_fields!(Store, params).await {
         Ok(stores) => status::Custom(
             Status::Ok,
             serde_json::to_value(&Response::success(
@@ -67,8 +68,8 @@ pub async fn get_unarchived_stores(token: RawToken) -> status::Custom<Value> {
     };
 
     let user_id = token.user_id;
-
-    match find_all_unarchived_resources_where_fields!(Store, vec![("owner_id", &user_id)]).await {
+    let params = vec![("owner_id", &user_id)];
+    match find_all_unarchived_resources_where_fields!(Store, params).await {
         Ok(stores) => status::Custom(
             Status::Ok,
             serde_json::to_value(&Response::success(
@@ -105,8 +106,8 @@ pub async fn get_archived_stores(token: RawToken) -> status::Custom<Value> {
     };
 
     let user_id = token.user_id;
-
-    match find_all_archived_resources_where_fields!(Store, vec![("owner_id", &user_id)]).await {
+    let params = vec![("owner_id", &user_id)];
+    match find_all_archived_resources_where_fields!(Store, params).await {
         Ok(stores) => status::Custom(
             Status::Ok,
             serde_json::to_value(&Response::success(
@@ -143,10 +144,8 @@ pub async fn get_store(store_id: String, token: RawToken) -> status::Custom<Valu
     };
 
     let user_id = token.user_id;
-
-    match find_one_resource_where_fields!(Store, vec![("id", &store_id), ("owner_id", &user_id)])
-        .await
-    {
+    let params = vec![("id", &store_id), ("owner_id", &user_id)];
+    match find_one_resource_where_fields!(Store, params).await {
         Ok(store) => status::Custom(
             Status::Ok,
             serde_json::to_value(&Response::success(
@@ -183,17 +182,12 @@ pub async fn create_store(store: Json<Store>, token: RawToken) -> status::Custom
     };
     let user_id = token.user_id;
 
-    match insert_resource!(
-        Store,
-        vec![
-            ("id", &store.id),
-            ("owner_id", &user_id),
-            ("store_name", &store.store_name),
-            ("store_description", &store.store_description),
-        ]
-    )
-    .await
-    {
+    let params = vec![
+        ("owner_id", DatabaseValue::String(user_id)),
+        ("store_name", DatabaseValue::String(store.store_name.clone())),
+        ("store_description", DatabaseValue::String(store.store_description.clone())),
+    ];
+    match insert_resource!(Store, params).await {
         Ok(_) => status::Custom(
             Status::Ok,
             serde_json::to_value(&Response::success(
@@ -234,35 +228,12 @@ pub async fn update_store(
     };
     let user_id = token.user_id;
 
-    let _ = match find_one_resource_where_fields!(
-        Store,
-        vec![("id", &store_id), ("owner_id", &user_id)]
-    )
-    .await
-    {
-        Ok(store) => store,
-        Err(_) => {
-            return status::Custom(
-                Status::NotFound,
-                serde_json::to_value(&Response::error(
-                    anyhow::anyhow!(StoreError::StoreNotFound),
-                    StoreError::StoreNotFound.to_string(),
-                ))
-                .unwrap(),
-            );
-        }
-    };
-
-    match update_resource!(
-        Store,
-        &store_id,
-        vec![
-            ("store_name", &store.store_name),
-            ("store_description", &store.store_description),
-        ]
-    )
-    .await
-    {
+    let params = vec![
+        ("store_name", DatabaseValue::String(store.store_name.clone())),
+        ("store_description", DatabaseValue::String(store.store_description.clone())),
+        ("owner_id", DatabaseValue::String(user_id)),
+    ];
+    match update_resource!(Store, &store_id, params).await {
         Ok(_) => status::Custom(
             Status::Ok,
             serde_json::to_value(&Response::success(
@@ -298,13 +269,9 @@ pub async fn delete_store(store_id: &str, token: RawToken) -> status::Custom<Val
         }
     };
     let user_id = token.user_id;
-
-    let _ = match find_one_resource_where_fields!(
-        Store,
-        vec![("id", &store_id), ("owner_id", &user_id.as_str())]
-    )
-    .await
-    {
+    let user_id_str = user_id.as_str();
+    let delete_params = vec![("id", &store_id), ("owner_id", &user_id_str)];
+    let _ = match find_one_resource_where_fields!(Store, delete_params).await {
         Ok(store) => store,
         Err(_) => {
             return status::Custom(
@@ -318,7 +285,7 @@ pub async fn delete_store(store_id: &str, token: RawToken) -> status::Custom<Val
         }
     };
 
-    match delete_resource_where_fields!(Store, vec![("id", &store_id)]).await {
+    match delete_resource_where_fields!(Store, delete_params).await {
         Ok(_) => status::Custom(
             Status::Ok,
             serde_json::to_value(&Response::success(

@@ -1,5 +1,6 @@
 use crate::api::response::Response;
 use crate::api::token::{RawToken, VerifiedToken};
+use crate::database::values::DatabaseValue;
 use crate::models::authentication::AuthenticationError;
 use crate::models::store_role::{StoreRole, StoreRoleError};
 use crate::models::store_role_user::{StoreRoleUser, StoreRoleUserError};
@@ -78,12 +79,9 @@ pub async fn create_store_user_role(
         }
     };
 
-    let store_role = match find_one_resource_where_fields!(
-        StoreRole,
-        vec![("id", &store_role.id), ("store_id", &store_id)]
-    )
-    .await
-    {
+    let store_role_id = store_role.id.clone();
+    let params = vec![("id", &store_role_id), ("store_id", &store_id)];
+    let store_role = match find_one_resource_where_fields!(StoreRole, params).await {
         Ok(role) => role,
         Err(_) => {
             return status::Custom(
@@ -97,16 +95,12 @@ pub async fn create_store_user_role(
         }
     };
 
-    match insert_resource!(
-        StoreRoleUser,
-        vec![
-            ("store_id", &store_id),
-            ("user_id", &user_id),
-            ("role_id", &store_role.id)
-        ]
-    )
-    .await
-    {
+    let insert_params = vec![
+        ("store_id", DatabaseValue::String(store_id)),
+        ("user_id", DatabaseValue::String(user_id)),
+        ("role_id", DatabaseValue::String(store_role.id.clone()))
+    ];
+    match insert_resource!(StoreRoleUser, insert_params).await {
         Ok(_) => status::Custom(
             Status::Created,
             serde_json::to_value(&Response::success(

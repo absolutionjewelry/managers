@@ -40,9 +40,10 @@ impl VerifiedToken {
     }
 
     pub async fn from_raw(raw_token: RawToken) -> Result<Self, AuthenticationError> {
+        let params = vec![("token", &raw_token.value)];
         let authentication = match find_one_resource_where_fields!(
             Authentication,
-            vec![("token", &raw_token.value)]
+            params
         )
         .await
         {

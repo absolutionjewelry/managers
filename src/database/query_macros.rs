@@ -14,8 +14,8 @@ macro_rules! find_all_resources_where_fields {
                 .collect::<Vec<String>>();
             let values = $params
                 .iter()
-                .map(|field| field.1.to_string())
-                .collect::<Vec<String>>();
+                .map(|field| &field.1)
+                .collect::<Vec<_>>();
             let mut query = format!("SELECT * FROM {} WHERE ", resource_name);
             for (i, field) in fields.iter().enumerate() {
                 query.push_str(&format!("{} = ${}", field, i + 1));
@@ -55,8 +55,8 @@ macro_rules! find_all_unarchived_resources_where_fields {
                 .collect::<Vec<String>>();
             let values = $params
                 .iter()
-                .map(|field| field.1.to_string())
-                .collect::<Vec<String>>();
+                .map(|field| &field.1)
+                .collect::<Vec<_>>();
             let mut query = format!("SELECT * FROM {} WHERE archived_at IS NULL ", resource_name);
             for (i, field) in fields.iter().enumerate() {
                 query.push_str(&format!("AND {} = ${}", field, i + 1));
@@ -93,8 +93,8 @@ macro_rules! find_all_archived_resources_where_fields {
                 .collect::<Vec<String>>();
             let values = $params
                 .iter()
-                .map(|field| field.1.to_string())
-                .collect::<Vec<String>>();
+                .map(|field| &field.1)
+                .collect::<Vec<_>>();
             let mut query = format!(
                 "SELECT * FROM {} WHERE archived_at IS NOT NULL ",
                 resource_name
@@ -134,8 +134,8 @@ macro_rules! find_one_resource_where_fields {
                 .collect::<Vec<String>>();
             let values = $params
                 .iter()
-                .map(|field| field.1.to_string())
-                .collect::<Vec<String>>();
+                .map(|field| &field.1)
+                .collect::<Vec<_>>();
             let mut query = format!("SELECT * FROM {} WHERE ", resource_name);
             for (i, field) in fields.iter().enumerate() {
                 query.push_str(&format!("{} = ${}", field, i + 1));
@@ -173,8 +173,8 @@ macro_rules! find_one_unarchived_resource_where_fields {
                 .collect::<Vec<String>>();
             let values = $params
                 .iter()
-                .map(|field| field.1.to_string())
-                .collect::<Vec<String>>();
+                .map(|field| &field.1)
+                .collect::<Vec<_>>();
             let mut query = format!("SELECT * FROM {} WHERE archived_at IS NULL ", resource_name);
             for (i, field) in fields.iter().enumerate() {
                 query.push_str(&format!("AND {} = ${}", field, i + 1));
@@ -209,8 +209,8 @@ macro_rules! find_one_archived_resource_where_fields {
                 .collect::<Vec<String>>();
             let values = $params
                 .iter()
-                .map(|field| field.1.to_string())
-                .collect::<Vec<String>>();
+                .map(|field| &field.1)
+                .collect::<Vec<_>>();
             let mut query = format!(
                 "SELECT * FROM {} WHERE archived_at IS NOT NULL ",
                 resource_name

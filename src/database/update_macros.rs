@@ -1,7 +1,7 @@
 #[macro_export]
 macro_rules! update_resource {
     ($resource:ty, $id:expr, $params:expr) => {{
-        use crate::database::{connection::get_connection, traits::DatabaseResource};
+        use crate::database::{connection::get_connection, traits::DatabaseResource, values::DatabaseValue};
         use pluralizer::pluralize;
         use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 
@@ -15,12 +15,12 @@ macro_rules! update_resource {
 
             let fields = params
                 .iter()
-                .map(|field| field.0.to_string())
+                .map(|(field, _)| field.to_string())
                 .collect::<Vec<String>>();
             let values = params
                 .iter()
-                .map(|field| field.1.to_string())
-                .collect::<Vec<String>>();
+                .map(|(_, value)| DatabaseValue::String(value.to_string()))
+                .collect::<Vec<DatabaseValue>>();
 
             let mut query = format!("UPDATE {} SET ", resource_name);
             for (i, field) in fields.iter().enumerate() {
@@ -55,7 +55,9 @@ macro_rules! update_resource {
                 Err(e) => return Err(e),
             };
 
-            match find_one_resource_where_fields!($resource, vec![("id", &$id)]).await {
+            let id = DatabaseValue::String($id.to_string());
+            let params = vec![("id", &id)];
+            match find_one_resource_where_fields!($resource, params).await {
                 Ok(resource) => Ok(resource),
                 Err(e) => Err(e),
             }

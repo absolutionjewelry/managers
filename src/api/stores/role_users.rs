@@ -80,9 +80,9 @@ pub async fn create_store_role_user(
     match insert_resource!(
         StoreRoleUser,
         vec![
-            ("store_id", &store_id),
-            ("role_id", &role_id),
-            ("user_id", &store_user.id)
+            ("store_id", DatabaseValue::String(store_id)),
+            ("role_id", DatabaseValue::String(role_id)),
+            ("user_id", DatabaseValue::String(store_user.id))
         ]
     )
     .await

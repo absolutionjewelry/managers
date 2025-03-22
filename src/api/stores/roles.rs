@@ -4,6 +4,7 @@ use crate::api::token::VerifiedToken;
 use crate::models::authentication::AuthenticationError;
 use crate::models::store::{Store, StoreError};
 use crate::models::store_role::{StoreRole, StoreRoleError};
+use crate::database::values::DatabaseValue;
 use crate::{
     delete_resource_where_fields, find_all_resources_where_fields, find_one_resource_where_fields,
     insert_resource, update_resource,
@@ -29,12 +30,25 @@ pub async fn get_store_roles(store_id: String, token: RawToken) -> status::Custo
     };
     let user_id = token.user_id;
 
-    match find_all_resources_where_fields!(
-        StoreRole,
-        vec![("store_id", &store_id), ("owner_id", &user_id)]
-    )
-    .await
-    {
+    let params = vec![
+        ("store_id", DatabaseValue::String(store_id.clone())),
+        ("owner_id", DatabaseValue::String(user_id.clone()))
+    ];
+    let _ = match find_one_resource_where_fields!(Store, params).await {
+        Ok(store) => store,
+        Err(_) => {
+            return status::Custom(
+                Status::NotFound,
+                serde_json::to_value(&Response::error(
+                    anyhow::anyhow!(StoreError::StoreNotFound),
+                    StoreError::StoreNotFound.to_string(),
+                ))
+                .unwrap(),
+            );
+        }
+    };
+
+    match find_all_resources_where_fields!(StoreRole, params).await {
         Ok(store_roles) => status::Custom(
             Status::Ok,
             serde_json::to_value(&Response::success(
@@ -75,12 +89,11 @@ pub async fn get_store_role(
     };
     let user_id = token.user_id;
 
-    let _ = match find_one_resource_where_fields!(
-        Store,
-        vec![("id", &store_id), ("owner_id", &user_id)]
-    )
-    .await
-    {
+    let params = vec![
+        ("store_id", DatabaseValue::String(store_id.clone())),
+        ("owner_id", DatabaseValue::String(user_id.clone()))
+    ];
+    let _ = match find_one_resource_where_fields!(Store, params).await {
         Ok(store) => store,
         Err(_) => {
             return status::Custom(
@@ -94,12 +107,8 @@ pub async fn get_store_role(
         }
     };
 
-    match find_one_resource_where_fields!(
-        StoreRole,
-        vec![("id", &role_id), ("store_id", &store_id)]
-    )
-    .await
-    {
+    let params = vec![("id", &role_id), ("store_id", &store_id)];
+    match find_one_resource_where_fields!(StoreRole, params).await {
         Ok(store_role) => status::Custom(
             Status::Ok,
             serde_json::to_value(&Response::success(
@@ -140,12 +149,11 @@ pub async fn create_store_role(
     };
     let user_id = token.user_id;
 
-    let _ = match find_one_resource_where_fields!(
-        Store,
-        vec![("id", &store_id), ("owner_id", &user_id)]
-    )
-    .await
-    {
+    let params = vec![
+        ("store_id", DatabaseValue::String(store_id.clone())),
+        ("owner_id", DatabaseValue::String(user_id.clone()))
+    ];
+    let _ = match find_one_resource_where_fields!(Store, params).await {
         Ok(store) => store,
         Err(_) => {
             return status::Custom(
@@ -159,16 +167,12 @@ pub async fn create_store_role(
         }
     };
 
-    match insert_resource!(
-        StoreRole,
-        vec![
-            ("store_id", &store_role.store_id),
-            ("role_name", &store_role.role_name),
-            ("role_description", &store_role.role_description),
-        ]
-    )
-    .await
-    {
+    let params = vec![
+        ("store_id", DatabaseValue::String(store_role.store_id.clone())),
+        ("role_name", DatabaseValue::String(store_role.role_name.clone())),
+        ("role_description", DatabaseValue::String(store_role.role_description.clone())),
+    ];
+    match insert_resource!(StoreRole, params).await {
         Ok(store_role) => status::Custom(
             Status::Created,
             serde_json::to_value(&Response::success(
@@ -210,12 +214,11 @@ pub async fn update_store_role(
     };
     let user_id = token.user_id;
 
-    let _ = match find_one_resource_where_fields!(
-        Store,
-        vec![("id", &store_id), ("owner_id", &user_id)]
-    )
-    .await
-    {
+    let params = vec![
+        ("store_id", DatabaseValue::String(store_id.clone())),
+        ("owner_id", DatabaseValue::String(user_id.clone()))
+    ];
+    let _ = match find_one_resource_where_fields!(Store, params).await {
         Ok(store) => store,
         Err(_) => {
             return status::Custom(
@@ -279,12 +282,11 @@ pub async fn delete_store_role(
     };
     let user_id = token.user_id;
 
-    let _ = match find_one_resource_where_fields!(
-        Store,
-        vec![("id", &store_id), ("owner_id", &user_id)]
-    )
-    .await
-    {
+    let params = vec![
+        ("store_id", DatabaseValue::String(store_id.clone())),
+        ("owner_id", DatabaseValue::String(user_id.clone()))
+    ];
+    let _ = match find_one_resource_where_fields!(Store, params).await {
         Ok(store) => store,
         Err(_) => {
             return status::Custom(
@@ -298,12 +300,8 @@ pub async fn delete_store_role(
         }
     };
 
-    let _ = match find_one_resource_where_fields!(
-        StoreRole,
-        vec![("id", &role_id), ("store_id", &store_id)]
-    )
-    .await
-    {
+    let params = vec![("id", &role_id), ("store_id", &store_id)];
+    let _ = match find_one_resource_where_fields!(StoreRole, params).await {
         Ok(store_role) => store_role,
         Err(_) => {
             return status::Custom(

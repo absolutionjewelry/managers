@@ -1,7 +1,7 @@
 #[macro_export]
 macro_rules! insert_resource {
     ($resource:ty, $params:expr) => {{
-        use crate::database::{connection::get_connection, traits::DatabaseResource};
+        use crate::database::{connection::get_connection, traits::DatabaseResource, values::DatabaseValue};
         use pluralizer::pluralize;
         use uuid::Uuid;
 
@@ -11,19 +11,16 @@ macro_rules! insert_resource {
             let resource_name = pluralize(&stringify!($resource).to_lowercase(), 2, false);
             let pool = get_connection().await;
 
-            let mut params = $params.clone();
+            let mut params: Vec<(String, DatabaseValue)> = Vec::new();
+            for (field, value) in $params.into_iter() {
+                params.push((field.to_string(), DatabaseValue::String(value.to_string())));
+            }
             if <$resource as DatabaseResource>::has_id() {
-                params.push(("id", &id));
+                params.push(("id".to_string(), DatabaseValue::String(id.clone())));
             }
 
-            let fields = params
-                .iter()
-                .map(|field| field.0.to_string())
-                .collect::<Vec<String>>();
-            let values = params
-                .iter()
-                .map(|field| field.1.to_string())
-                .collect::<Vec<String>>();
+            let fields: Vec<String> = params.iter().map(|(field, _)| field.clone()).collect();
+            let values: Vec<&DatabaseValue> = params.iter().map(|(_, value)| value).collect();
 
             let mut query = format!("INSERT INTO {} (", resource_name);
             for (i, field) in fields.iter().enumerate() {

@@ -29,12 +29,8 @@ pub async fn get_store_users(store_id: String, token: RawToken) -> status::Custo
     };
     let user_id = token.user_id;
 
-    let _ = match find_one_resource_where_fields!(
-        Store,
-        vec![("id", &store_id), ("owner_id", &user_id)]
-    )
-    .await
-    {
+    let check_params = vec![("id", &store_id), ("owner_id", &user_id)];
+    let _ = match find_one_resource_where_fields!(Store, check_params).await {
         Ok(store) => store,
         Err(_) => {
             return status::Custom(
@@ -48,7 +44,8 @@ pub async fn get_store_users(store_id: String, token: RawToken) -> status::Custo
         }
     };
 
-    match find_all_resources_where_fields!(StoreUser, vec![("store_id", &store_id)]).await {
+    let query_params = vec![("store_id", &store_id)];
+    match find_all_resources_where_fields!(StoreUser, query_params).await {
         Ok(store_users) => status::Custom(
             Status::Ok,
             serde_json::to_value(&Response::success(
@@ -89,12 +86,8 @@ pub async fn get_store_user(
     };
     let owner_id = token.user_id;
 
-    let _ = match find_one_resource_where_fields!(
-        Store,
-        vec![("id", &store_id), ("owner_id", &owner_id)]
-    )
-    .await
-    {
+    let check_params = vec![("id", &store_id), ("owner_id", &owner_id)];
+    let _ = match find_one_resource_where_fields!(Store, check_params).await {
         Ok(store) => store,
         Err(_) => {
             return status::Custom(
@@ -108,9 +101,10 @@ pub async fn get_store_user(
         }
     };
 
+    let query_params = vec![("store_id", &store_id), ("user_id", &user_id)];
     match find_one_resource_where_fields!(
         StoreUser,
-        vec![("store_id", &store_id), ("user_id", &user_id)]
+        query_params
     )
     .await
     {
@@ -155,12 +149,8 @@ pub async fn create_store_user(
 
     let owner_id = token.user_id;
 
-    let _ = match find_one_resource_where_fields!(
-        Store,
-        vec![("id", &store_id), ("owner_id", &owner_id)]
-    )
-    .await
-    {
+    let check_params = vec![("id", &store_id), ("owner_id", &owner_id)];
+    let _ = match find_one_resource_where_fields!(Store, check_params).await {
         Ok(store) => store,
         Err(_) => {
             return status::Custom(
@@ -178,7 +168,7 @@ pub async fn create_store_user(
 
     match insert_resource!(
         StoreUser,
-        vec![("store_id", &store_id), ("user_id", &store_user.user_id)]
+        vec![("store_id", DatabaseValue::String(store_id)), ("user_id", DatabaseValue::String(store_user.user_id))]
     )
     .await
     {
@@ -225,12 +215,8 @@ pub async fn update_store_user(
 
     let store_user = store_user.into_inner();
 
-    let _ = match find_one_resource_where_fields!(
-        Store,
-        vec![("id", &store_id), ("owner_id", &owner_id)]
-    )
-    .await
-    {
+    let check_params = vec![("id", &store_id), ("owner_id", &owner_id)];
+    let _ = match find_one_resource_where_fields!(Store, check_params).await {
         Ok(store) => store,
         Err(_) => {
             return status::Custom(
@@ -244,9 +230,10 @@ pub async fn update_store_user(
         }
     };
 
+    let query_params = vec![("store_id", &store_id), ("user_id", &user_id)];
     let _ = match find_one_resource_where_fields!(
         StoreUser,
-        vec![("store_id", &store_id), ("user_id", &user_id)]
+        query_params
     )
     .await
     {
@@ -312,9 +299,10 @@ pub async fn delete_store_user(
         }
     };
 
+    let delete_params = vec![("store_id", &store_id), ("user_id", &user_id)];
     match delete_resource_where_fields!(
         StoreUser,
-        vec![("store_id", &store_id), ("user_id", &user_id)]
+        delete_params
     )
     .await
     {

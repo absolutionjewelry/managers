@@ -57,6 +57,9 @@ async fn main() -> anyhow::Result<()> {
                 api::stores::products::products::get_unarchived_products,
                 api::stores::products::products::get_archived_products,
                 api::stores::products::products::get_product,
+                api::stores::products::products::create_product,
+                api::stores::products::products::update_product,
+                api::stores::products::products::delete_product,
             ],
         )
         .manage(pool)

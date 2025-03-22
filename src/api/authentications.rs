@@ -57,15 +57,11 @@ pub async fn login(authentication_request: Json<AuthenticationRequest>) -> statu
         Sha256::digest(authentication_request.password.as_bytes())
     );
 
-    let user = match find_one_resource_where_fields!(
-        User,
-        vec![
-            ("username", &authentication_request.username),
-            ("user_password", &hashed_password)
-        ]
-    )
-    .await
-    {
+    let login_params = vec![
+        ("username", &authentication_request.username),
+        ("user_password", &hashed_password)
+    ];
+    let user = match find_one_resource_where_fields!(User, login_params).await {
         Ok(user) => user,
         Err(_) => {
             return status::Custom(
@@ -83,7 +79,8 @@ pub async fn login(authentication_request: Json<AuthenticationRequest>) -> statu
     let expires_at = (OffsetDateTime::now_utc() + Duration::days(30)).format(&Rfc3339);
     let expires_at_str = expires_at.unwrap();
 
-    match find_one_resource_where_fields!(Authentication, vec![("user_id", &user_id)]).await {
+    let auth_params = vec![("user_id", &user_id)];
+    match find_one_resource_where_fields!(Authentication, auth_params).await {
         Ok(authentication) => {
             match update_resource!(
                 Authentication,
@@ -117,7 +114,7 @@ pub async fn login(authentication_request: Json<AuthenticationRequest>) -> statu
             let token = Uuid::new_v4().to_string();
             match insert_resource!(
                 Authentication,
-                vec![("user_id", &user_id), ("token", &token)]
+                vec![("user_id", DatabaseValue::String(user_id)), ("token", DatabaseValue::String(token))]
             )
             .await
             {
@@ -170,7 +167,8 @@ pub async fn logout(token: RawToken) -> status::Custom<Value> {
         }
     };
     let token_str = token_value.raw_token.unwrap().clone();
-    match delete_resource_where_fields!(Authentication, vec![("token", &token_str)]).await {
+    let logout_params = vec![("token", &token_str)];
+    match delete_resource_where_fields!(Authentication, logout_params).await {
         Ok(_) => status::Custom(
             Status::Ok,
             serde_json::to_value(AuthenticationResponse::success(
@@ -194,15 +192,11 @@ pub async fn logout(token: RawToken) -> status::Custom<Value> {
 pub async fn register(register_request: Json<RegisterRequest>) -> status::Custom<Value> {
     let hashed_password = format!("{:x}", Sha256::digest(register_request.password.as_bytes()));
 
-    match insert_resource!(
-        User,
-        vec![
-            ("username", &register_request.username),
-            ("user_password", &hashed_password)
-        ]
-    )
-    .await
-    {
+    let register_params = vec![
+        ("username", &register_request.username),
+        ("user_password", &hashed_password)
+    ];
+    match insert_resource!(User, register_params).await {
         Ok(user) => status::Custom(
             Status::Ok,
             serde_json::to_value(AuthenticationResponse::success(
