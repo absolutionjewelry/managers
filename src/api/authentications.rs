@@ -59,7 +59,7 @@ pub async fn login(authentication_request: Json<AuthenticationRequest>) -> statu
 
     let login_params = vec![
         ("username", &authentication_request.username),
-        ("user_password", &hashed_password)
+        ("user_password", &hashed_password),
     ];
     let user = match find_one_resource_where_fields!(User, login_params).await {
         Ok(user) => user,
@@ -114,7 +114,10 @@ pub async fn login(authentication_request: Json<AuthenticationRequest>) -> statu
             let token = Uuid::new_v4().to_string();
             match insert_resource!(
                 Authentication,
-                vec![("user_id", DatabaseValue::String(user_id)), ("token", DatabaseValue::String(token))]
+                vec![
+                    ("user_id", DatabaseValue::String(user_id)),
+                    ("token", DatabaseValue::String(token))
+                ]
             )
             .await
             {
@@ -194,7 +197,7 @@ pub async fn register(register_request: Json<RegisterRequest>) -> status::Custom
 
     let register_params = vec![
         ("username", &register_request.username),
-        ("user_password", &hashed_password)
+        ("user_password", &hashed_password),
     ];
     match insert_resource!(User, register_params).await {
         Ok(user) => status::Custom(

@@ -1,7 +1,9 @@
 #[macro_export]
 macro_rules! insert_resource {
     ($resource:ty, $params:expr) => {{
-        use crate::database::{connection::get_connection, traits::DatabaseResource, values::DatabaseValue};
+        use crate::database::{
+            connection::get_connection, traits::DatabaseResource, values::DatabaseValue,
+        };
         use pluralizer::pluralize;
         use uuid::Uuid;
 

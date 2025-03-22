@@ -1,5 +1,5 @@
-use sqlx::{encode::IsNull, error::BoxDynError, Encode, Postgres, Type};
 use sqlx::postgres::PgArgumentBuffer;
+use sqlx::{encode::IsNull, error::BoxDynError, Encode, Postgres, Type};
 use std::fmt::{self, Display};
 use std::iter::FromIterator;
 

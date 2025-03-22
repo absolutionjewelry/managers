@@ -98,7 +98,7 @@ pub async fn create_store_user_role(
     let insert_params = vec![
         ("store_id", DatabaseValue::String(store_id)),
         ("user_id", DatabaseValue::String(user_id)),
-        ("role_id", DatabaseValue::String(store_role.id.clone()))
+        ("role_id", DatabaseValue::String(store_role.id.clone())),
     ];
     match insert_resource!(StoreRoleUser, insert_params).await {
         Ok(_) => status::Custom(

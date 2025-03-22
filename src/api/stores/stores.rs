@@ -1,6 +1,7 @@
 use crate::api::response::Response;
 use crate::api::token::RawToken;
 use crate::api::token::VerifiedToken;
+use crate::database::values::DatabaseValue;
 use crate::models::authentication::AuthenticationError;
 use crate::models::store::{Store, StoreError};
 use crate::{
@@ -11,7 +12,6 @@ use crate::{
 use rocket::http::Status;
 use rocket::response::status;
 use rocket::serde::json::{Json, Value};
-use crate::database::values::DatabaseValue;
 
 #[get("/")]
 pub async fn get_stores(token: RawToken) -> status::Custom<Value> {
@@ -51,7 +51,7 @@ pub async fn get_stores(token: RawToken) -> status::Custom<Value> {
     }
 }
 
-#[get("/unarchived")]
+#[get("/unarchived", rank = 2)]
 pub async fn get_unarchived_stores(token: RawToken) -> status::Custom<Value> {
     let token = match VerifiedToken::from_raw(token).await {
         Ok(token) => token,
@@ -89,7 +89,7 @@ pub async fn get_unarchived_stores(token: RawToken) -> status::Custom<Value> {
     }
 }
 
-#[get("/archived")]
+#[get("/archived", rank = 1)]
 pub async fn get_archived_stores(token: RawToken) -> status::Custom<Value> {
     let token = match VerifiedToken::from_raw(token).await {
         Ok(token) => token,
@@ -184,8 +184,14 @@ pub async fn create_store(store: Json<Store>, token: RawToken) -> status::Custom
 
     let params = vec![
         ("owner_id", DatabaseValue::String(user_id)),
-        ("store_name", DatabaseValue::String(store.store_name.clone())),
-        ("store_description", DatabaseValue::String(store.store_description.clone())),
+        (
+            "store_name",
+            DatabaseValue::String(store.store_name.clone()),
+        ),
+        (
+            "store_description",
+            DatabaseValue::String(store.store_description.clone()),
+        ),
     ];
     match insert_resource!(Store, params).await {
         Ok(_) => status::Custom(
@@ -229,8 +235,14 @@ pub async fn update_store(
     let user_id = token.user_id;
 
     let params = vec![
-        ("store_name", DatabaseValue::String(store.store_name.clone())),
-        ("store_description", DatabaseValue::String(store.store_description.clone())),
+        (
+            "store_name",
+            DatabaseValue::String(store.store_name.clone()),
+        ),
+        (
+            "store_description",
+            DatabaseValue::String(store.store_description.clone()),
+        ),
         ("owner_id", DatabaseValue::String(user_id)),
     ];
     match update_resource!(Store, &store_id, params).await {

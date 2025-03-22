@@ -1,7 +1,9 @@
 #[macro_export]
 macro_rules! update_resource {
     ($resource:ty, $id:expr, $params:expr) => {{
-        use crate::database::{connection::get_connection, traits::DatabaseResource, values::DatabaseValue};
+        use crate::database::{
+            connection::get_connection, traits::DatabaseResource, values::DatabaseValue,
+        };
         use pluralizer::pluralize;
         use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 

@@ -4,3 +4,4 @@ pub mod roles;
 pub mod stores;
 pub mod user_roles;
 pub mod users;
+pub mod variants;

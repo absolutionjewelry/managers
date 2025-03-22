@@ -1,6 +1,7 @@
 use crate::api::response::Response;
 use crate::api::token::RawToken;
 use crate::api::token::VerifiedToken;
+use crate::database::values::DatabaseValue;
 use crate::models::authentication::AuthenticationError;
 use crate::models::product::Product;
 use crate::models::product::ProductError;
@@ -13,7 +14,6 @@ use crate::{
 use rocket::http::Status;
 use rocket::response::status;
 use rocket::serde::json::{Json, Value};
-use crate::database::values::DatabaseValue;
 
 #[get("/<store_id>/products")]
 pub async fn get_products(store_id: String, token: RawToken) -> status::Custom<Value> {
@@ -69,7 +69,7 @@ pub async fn get_products(store_id: String, token: RawToken) -> status::Custom<V
     }
 }
 
-#[get("/<store_id>/products/unarchived")]
+#[get("/<store_id>/products/unarchived", rank = 2)]
 pub async fn get_unarchived_products(store_id: String, token: RawToken) -> status::Custom<Value> {
     let token = match VerifiedToken::from_raw(token).await {
         Ok(token) => token,
@@ -123,7 +123,7 @@ pub async fn get_unarchived_products(store_id: String, token: RawToken) -> statu
     }
 }
 
-#[get("/<store_id>/products/archived")]
+#[get("/<store_id>/products/archived", rank = 1)]
 pub async fn get_archived_products(store_id: String, token: RawToken) -> status::Custom<Value> {
     let token = match VerifiedToken::from_raw(token).await {
         Ok(token) => token,
@@ -202,7 +202,7 @@ pub async fn get_product(
     let product_params = vec![
         ("id", &product_id),
         ("store_id", &store_id),
-        ("owner_id", &user_id)
+        ("owner_id", &user_id),
     ];
     match find_one_resource_where_fields!(Product, product_params).await {
         Ok(product) => status::Custom(
@@ -265,12 +265,24 @@ pub async fn create_product(
     let product_params = vec![
         ("store_id", DatabaseValue::String(store_id)),
         ("owner_id", DatabaseValue::String(user_id)),
-        ("product_name", DatabaseValue::String(product.product_name.unwrap_or_default())),
-        ("product_description", DatabaseValue::String(product.product_description.unwrap_or_default())),
-        ("product_base_price", DatabaseValue::Float(product.product_base_price.unwrap_or_default())),
-        ("product_base_quantity", DatabaseValue::Int(product.product_base_quantity.unwrap_or_default())),
+        (
+            "product_name",
+            DatabaseValue::String(product.product_name.unwrap_or_default()),
+        ),
+        (
+            "product_description",
+            DatabaseValue::String(product.product_description.unwrap_or_default()),
+        ),
+        (
+            "product_base_price",
+            DatabaseValue::Float(product.product_base_price.unwrap_or_default()),
+        ),
+        (
+            "product_base_quantity",
+            DatabaseValue::Int(product.product_base_quantity.unwrap_or_default()),
+        ),
     ];
-    
+
     match insert_resource!(Product, product_params).await {
         Ok(product) => status::Custom(
             Status::Ok,
@@ -331,11 +343,26 @@ pub async fn update_product(
 
     let product = product.into_inner();
     let product_params = vec![
-        ("product_name", DatabaseValue::String(product.product_name.unwrap())),
-        ("product_description", DatabaseValue::String(product.product_description.unwrap())),
-        ("product_base_price", DatabaseValue::Float(product.product_base_price.unwrap())),
-        ("product_base_cost", DatabaseValue::Float(product.product_base_cost.unwrap())),
-        ("product_base_quantity", DatabaseValue::Int(product.product_base_quantity.unwrap())),
+        (
+            "product_name",
+            DatabaseValue::String(product.product_name.unwrap()),
+        ),
+        (
+            "product_description",
+            DatabaseValue::String(product.product_description.unwrap()),
+        ),
+        (
+            "product_base_price",
+            DatabaseValue::Float(product.product_base_price.unwrap()),
+        ),
+        (
+            "product_base_cost",
+            DatabaseValue::Float(product.product_base_cost.unwrap()),
+        ),
+        (
+            "product_base_quantity",
+            DatabaseValue::Int(product.product_base_quantity.unwrap()),
+        ),
     ];
 
     match update_resource!(Product, &product_id, product_params).await {

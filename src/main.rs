@@ -60,6 +60,13 @@ async fn main() -> anyhow::Result<()> {
                 api::stores::products::products::create_product,
                 api::stores::products::products::update_product,
                 api::stores::products::products::delete_product,
+                api::stores::variants::variants::get_variants,
+                api::stores::variants::variants::get_archived_variants,
+                api::stores::variants::variants::get_unarchived_variants,
+                api::stores::variants::variants::get_variant,
+                api::stores::variants::variants::create_variant,
+                api::stores::variants::variants::update_variant,
+                api::stores::variants::variants::delete_variant,
             ],
         )
         .manage(pool)
