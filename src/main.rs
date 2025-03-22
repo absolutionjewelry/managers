@@ -30,6 +30,9 @@ async fn main() -> anyhow::Result<()> {
         .mount(
             "/api/stores",
             routes![
+                api::stores::stores::get_stores,
+                api::stores::stores::get_unarchived_stores,
+                api::stores::stores::get_archived_stores,
                 api::stores::stores::get_store,
                 api::stores::stores::create_store,
                 api::stores::stores::update_store,
@@ -50,6 +53,10 @@ async fn main() -> anyhow::Result<()> {
                 api::stores::user_roles::get_store_user_roles,
                 api::stores::user_roles::create_store_user_role,
                 api::stores::user_roles::delete_store_user_role,
+                api::stores::products::products::get_products,
+                api::stores::products::products::get_unarchived_products,
+                api::stores::products::products::get_archived_products,
+                api::stores::products::products::get_product,
             ],
         )
         .manage(pool)

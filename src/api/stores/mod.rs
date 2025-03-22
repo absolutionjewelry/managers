@@ -1,3 +1,4 @@
+pub mod products;
 pub mod role_users;
 pub mod roles;
 pub mod stores;
