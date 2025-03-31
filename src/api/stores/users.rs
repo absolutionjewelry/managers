@@ -12,6 +12,17 @@ use rocket::http::Status;
 use rocket::response::status;
 use rocket::serde::json::{Json, Value};
 
+/// Get all users of a store
+/// 
+/// Returns:
+/// if success:
+/// - status: 200
+/// - StoreUsers json array
+/// else:
+/// - error: StoreError, StoreUserError, or AuthenticationError
+/// 
+/// Example:
+/// "curl -X GET http://localhost:8000/api/stores/1/users -H 'Authorization: Bearer <token>'"
 #[get("/<store_id>/users")]
 pub async fn get_store_users(store_id: String, token: RawToken) -> status::Custom<Value> {
     let token = match VerifiedToken::from_raw(token).await {
@@ -65,6 +76,17 @@ pub async fn get_store_users(store_id: String, token: RawToken) -> status::Custo
     }
 }
 
+/// Get a user of a store
+/// 
+/// Returns:
+/// if success:
+/// - status: 200
+/// - StoreUser json object
+/// else:
+/// - error: StoreError, StoreUserError, or AuthenticationError
+/// 
+/// Example:
+/// "curl -X GET http://localhost:8000/api/stores/1/users/1 -H 'Authorization: Bearer <token>'"
 #[get("/<store_id>/users/<user_id>")]
 pub async fn get_store_user(
     store_id: String,
@@ -122,6 +144,20 @@ pub async fn get_store_user(
     }
 }
 
+/// Create a user of a store
+/// 
+/// Parameters:
+/// - store_user: StoreUser json object
+/// 
+/// Returns:
+/// if success:
+/// - status: 200
+/// - StoreUser json object
+/// else:
+/// - error: StoreError, StoreUserError, or AuthenticationError
+/// 
+/// Example:
+/// "curl -X POST http://localhost:8000/api/stores/1/users/1 -H 'Authorization: Bearer <token>' -H 'Content-Type: application/json'"
 #[post("/<store_id>/users", data = "<store_user>")]
 pub async fn create_store_user(
     store_id: String,
@@ -272,6 +308,8 @@ pub async fn update_store_user(
     }
 }
 
+/// Delete a user of a store
+/// 
 #[delete("/<store_id>/users/<user_id>")]
 pub async fn delete_store_user(
     store_id: String,

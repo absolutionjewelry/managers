@@ -50,6 +50,21 @@ pub struct RegisterRequest {
     pub password: String,
 }
 
+/// Login to the system
+///
+/// Parameters:
+/// - username: String
+/// - password: String
+///
+/// Returns:
+/// if success:
+/// - status: 200
+/// - Authentication json object
+/// else:
+/// - error: AuthenticationError
+///
+/// Example:
+/// "curl -X POST http://localhost:8000/api/auth/ -H 'Content-Type: application/json' -d '{"username": "admin", "password": "admin"}'"
 #[post("/", data = "<authentication_request>")]
 pub async fn login(authentication_request: Json<AuthenticationRequest>) -> status::Custom<Value> {
     let hashed_password = format!(
@@ -144,6 +159,19 @@ pub async fn login(authentication_request: Json<AuthenticationRequest>) -> statu
     }
 }
 
+/// Logout from the system
+///
+/// Parameters:
+/// - token: String (obtained from authentication)
+///
+/// Returns:
+/// if success:
+/// - status: 200
+/// else:
+/// - error: AuthenticationError
+///
+/// Example:
+/// "curl -X DELETE http://localhost:8000/api/auth/ -H 'Content-Type: application/json' -H 'Authorization: Bearer <token>'"
 #[delete("/")]
 pub async fn logout(token: RawToken) -> status::Custom<Value> {
     if token.value.is_empty() {
@@ -191,6 +219,21 @@ pub async fn logout(token: RawToken) -> status::Custom<Value> {
     }
 }
 
+/// Register a new user
+/// 
+/// Parameters:
+/// - username: String
+/// - password: String
+///
+/// Returns:
+/// if success:
+/// - status: 200
+/// - User json object
+/// else:
+/// - error: AuthenticationError
+///
+/// Example:
+/// "curl -X POST http://localhost:8000/api/auth/register -H 'Content-Type: application/json' -d '{"username": "admin", "password": "admin"}'"
 #[post("/register", data = "<register_request>")]
 pub async fn register(register_request: Json<RegisterRequest>) -> status::Custom<Value> {
     let hashed_password = format!("{:x}", Sha256::digest(register_request.password.as_bytes()));
