@@ -67,6 +67,14 @@ impl DatabaseResource for Store {
         true
     }
 
+    fn is_creatable() -> bool {
+        true
+    }
+
+    fn is_expirable() -> bool {
+        false
+    }
+
     fn from_row(row: &PgRow) -> Result<Self, Error> {
         Ok(Store {
             id: row.get("id"),

@@ -3,31 +3,31 @@ macro_rules! delete_resource_where_fields {
     ($resource:ty, $params:expr) => {{
         use crate::database::connection::get_connection;
         use crate::database::traits::DatabaseResource;
+        use crate::database::values::DatabaseValue;
+        use crate::utils::strings::camel_to_snake_case;
         use anyhow::anyhow;
         use pluralizer::pluralize;
         use time::OffsetDateTime;
+
         async {
             let archived_at = OffsetDateTime::now_utc();
-            let archived_at_str = archived_at.to_string();
 
-            let resource_name = pluralize(&stringify!($resource).to_lowercase(), 2, false);
+            let resource_name = pluralize(
+                camel_to_snake_case(stringify!($resource).to_string()).as_str(),
+                2,
+                false,
+            );
             let pool = get_connection().await;
 
             let params = $params.clone();
 
-            let fields = params
-                .iter()
-                .map(|field| field.0.to_string())
-                .collect::<Vec<String>>();
-            let values = params
-                .iter()
-                .map(|field| field.1.to_string())
-                .collect::<Vec<String>>();
+            let fields: Vec<String> = params.iter().map(|field| field.0.to_string()).collect();
+            let values: Vec<DatabaseValue> = params.iter().map(|field| field.1.clone()).collect();
 
             let mut query: String;
             if <$resource as DatabaseResource>::is_archivable() {
                 query = format!(
-                    "UPDATE {} SET archived_at = ${} WHERE ",
+                    "UPDATE {} SET archived_at = CAST(${} AS TIMESTAMP) WHERE ",
                     resource_name,
                     fields.len() + 1
                 );
@@ -47,7 +47,7 @@ macro_rules! delete_resource_where_fields {
                 query = query.bind(value);
             }
             if <$resource as DatabaseResource>::is_archivable() {
-                query = query.bind(&archived_at_str);
+                query = query.bind(archived_at);
             }
 
             match query.execute(&pool).await {
@@ -56,11 +56,4 @@ macro_rules! delete_resource_where_fields {
             }
         }
     }};
-}
-
-#[macro_export]
-macro_rules! delete_resource {
-    ($resource:expr, $id:expr) => {
-        delete_resource_where_fields!($resource, vec![("id", $id)]).await
-    };
 }

@@ -1,5 +1,6 @@
 use crate::api::response::Response;
 use crate::api::token::{RawToken, VerifiedToken};
+use crate::database::values::DatabaseValue;
 use crate::models::authentication::AuthenticationError;
 use crate::models::store_role_user::{StoreRoleUser, StoreRoleUserError};
 use crate::models::store_user::StoreUser;
@@ -31,7 +32,10 @@ pub async fn get_store_role_users(
     match join_all_resources_where_fields_on!(
         StoreUser,
         StoreRole,
-        vec![("store_id", &store_id), ("role_id", &role_id)]
+        vec![
+            ("store_id", DatabaseValue::String(store_id.clone())),
+            ("role_id", DatabaseValue::String(role_id.clone()))
+        ]
     )
     .await
     {
@@ -80,8 +84,8 @@ pub async fn create_store_role_user(
     match insert_resource!(
         StoreRoleUser,
         vec![
-            ("store_id", DatabaseValue::String(store_id)),
-            ("role_id", DatabaseValue::String(role_id)),
+            ("store_id", DatabaseValue::String(store_id.clone())),
+            ("role_id", DatabaseValue::String(role_id.clone())),
             ("user_id", DatabaseValue::String(store_user.id))
         ]
     )
@@ -130,9 +134,9 @@ pub async fn delete_store_role_user(
     match delete_resource_where_fields!(
         StoreRoleUser,
         vec![
-            ("store_id", &store_id),
-            ("role_id", &role_id),
-            ("user_id", &user_id)
+            ("store_id", DatabaseValue::String(store_id.clone())),
+            ("role_id", DatabaseValue::String(role_id.clone())),
+            ("user_id", DatabaseValue::String(user_id.clone()))
         ]
     )
     .await
@@ -140,7 +144,7 @@ pub async fn delete_store_role_user(
         Ok(_) => status::Custom(
             Status::Ok,
             serde_json::to_value(&Response::success(
-                serde_json::json!(user_id),
+                serde_json::json!(user_id.clone()),
                 Some("Store user deleted successfully".to_string()),
             ))
             .unwrap(),

@@ -30,7 +30,7 @@ pub async fn get_stores(token: RawToken) -> status::Custom<Value> {
     };
 
     let user_id = token.user_id;
-    let params = vec![("owner_id", &user_id)];
+    let params = vec![("owner_id", DatabaseValue::String(user_id))];
     match find_all_resources_where_fields!(Store, params).await {
         Ok(stores) => status::Custom(
             Status::Ok,
@@ -68,7 +68,7 @@ pub async fn get_unarchived_stores(token: RawToken) -> status::Custom<Value> {
     };
 
     let user_id = token.user_id;
-    let params = vec![("owner_id", &user_id)];
+    let params = vec![("owner_id", DatabaseValue::String(user_id))];
     match find_all_unarchived_resources_where_fields!(Store, params).await {
         Ok(stores) => status::Custom(
             Status::Ok,
@@ -106,7 +106,7 @@ pub async fn get_archived_stores(token: RawToken) -> status::Custom<Value> {
     };
 
     let user_id = token.user_id;
-    let params = vec![("owner_id", &user_id)];
+    let params = vec![("owner_id", DatabaseValue::String(user_id))];
     match find_all_archived_resources_where_fields!(Store, params).await {
         Ok(stores) => status::Custom(
             Status::Ok,
@@ -144,7 +144,10 @@ pub async fn get_store(store_id: String, token: RawToken) -> status::Custom<Valu
     };
 
     let user_id = token.user_id;
-    let params = vec![("id", &store_id), ("owner_id", &user_id)];
+    let params = vec![
+        ("id", DatabaseValue::String(store_id)),
+        ("owner_id", DatabaseValue::String(user_id)),
+    ];
     match find_one_resource_where_fields!(Store, params).await {
         Ok(store) => status::Custom(
             Status::Ok,
@@ -245,7 +248,8 @@ pub async fn update_store(
         ),
         ("owner_id", DatabaseValue::String(user_id)),
     ];
-    match update_resource!(Store, &store_id, params).await {
+    let store_id = store_id.clone();
+    match update_resource!(Store, store_id, params).await {
         Ok(_) => status::Custom(
             Status::Ok,
             serde_json::to_value(&Response::success(
@@ -282,7 +286,10 @@ pub async fn delete_store(store_id: &str, token: RawToken) -> status::Custom<Val
     };
     let user_id = token.user_id;
     let user_id_str = user_id.as_str();
-    let delete_params = vec![("id", &store_id), ("owner_id", &user_id_str)];
+    let delete_params = vec![
+        ("id", DatabaseValue::String(store_id.to_string())),
+        ("owner_id", DatabaseValue::String(user_id_str.to_string())),
+    ];
     let _ = match find_one_resource_where_fields!(Store, delete_params).await {
         Ok(store) => store,
         Err(_) => {

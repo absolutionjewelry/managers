@@ -35,7 +35,10 @@ pub async fn get_store_user_roles(
     match join_all_resources_where_fields_on!(
         StoreRole,
         StoreUser,
-        vec![("store_id", &store_id), ("user_id", &user_id)]
+        vec![
+            ("store_id", DatabaseValue::String(store_id.clone())),
+            ("user_id", DatabaseValue::String(user_id.clone()))
+        ]
     )
     .await
     {
@@ -144,9 +147,9 @@ pub async fn delete_store_user_role(
     match delete_resource_where_fields!(
         StoreRoleUser,
         vec![
-            ("store_id", &store_id),
-            ("user_id", &user_id),
-            ("role_id", &role_id)
+            ("store_id", DatabaseValue::String(store_id.clone())),
+            ("user_id", DatabaseValue::String(user_id.clone())),
+            ("role_id", DatabaseValue::String(role_id.clone()))
         ]
     )
     .await
@@ -154,7 +157,7 @@ pub async fn delete_store_user_role(
         Ok(_) => status::Custom(
             Status::Ok,
             serde_json::to_value(&Response::success(
-                serde_json::json!(role_id),
+                serde_json::json!(role_id.clone()),
                 Some("Store user role deleted successfully".to_string()),
             ))
             .unwrap(),

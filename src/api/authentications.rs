@@ -1,6 +1,11 @@
 use crate::api::token::{RawToken, VerifiedToken};
-use crate::models::authentication::{Authentication, AuthenticationError};
-use crate::models::user::User;
+use crate::database::values::DatabaseValue;
+use crate::models::{
+    authentication::{Authentication, AuthenticationError},
+    backup_code::{BackupCode, BackupCodeError},
+    user::{User, UserError},
+};
+use crate::utils::backup_codes::generate_backup_codes;
 use crate::{
     delete_resource_where_fields, find_one_resource_where_fields, insert_resource, update_resource,
 };
@@ -10,12 +15,37 @@ use rocket::serde::json::Json;
 use rocket::serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
-use time::{format_description::well_known::Rfc3339, Duration, OffsetDateTime};
+use time::{format_description::well_known::Iso8601, Duration, OffsetDateTime};
 use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize)]
+pub enum AuthenticationResponseError {
+    User(UserError),
+    BackupCode(BackupCodeError),
+    Authentication(AuthenticationError),
+}
+
+impl From<UserError> for AuthenticationResponseError {
+    fn from(error: UserError) -> Self {
+        AuthenticationResponseError::User(error)
+    }
+}
+
+impl From<BackupCodeError> for AuthenticationResponseError {
+    fn from(error: BackupCodeError) -> Self {
+        AuthenticationResponseError::BackupCode(error)
+    }
+}
+
+impl From<AuthenticationError> for AuthenticationResponseError {
+    fn from(error: AuthenticationError) -> Self {
+        AuthenticationResponseError::Authentication(error)
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct AuthenticationResponse {
-    pub error: Option<AuthenticationError>,
+    pub error: Option<AuthenticationResponseError>,
     pub message: Option<String>,
     pub data: Option<Value>,
 }
@@ -29,7 +59,7 @@ impl AuthenticationResponse {
         }
     }
 
-    pub fn error(error: AuthenticationError, message: String) -> Self {
+    pub fn error(error: AuthenticationResponseError, message: String) -> Self {
         Self {
             error: Some(error),
             message: Some(message),
@@ -40,12 +70,6 @@ impl AuthenticationResponse {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AuthenticationRequest {
-    pub username: String,
-    pub password: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct RegisterRequest {
     pub username: String,
     pub password: String,
 }
@@ -73,8 +97,11 @@ pub async fn login(authentication_request: Json<AuthenticationRequest>) -> statu
     );
 
     let login_params = vec![
-        ("username", &authentication_request.username),
-        ("user_password", &hashed_password),
+        (
+            "username",
+            DatabaseValue::String(authentication_request.username.clone()),
+        ),
+        ("user_password", DatabaseValue::String(hashed_password)),
     ];
     let user = match find_one_resource_where_fields!(User, login_params).await {
         Ok(user) => user,
@@ -82,7 +109,7 @@ pub async fn login(authentication_request: Json<AuthenticationRequest>) -> statu
             return status::Custom(
                 Status::NotFound,
                 serde_json::to_value(AuthenticationResponse::error(
-                    AuthenticationError::UserNotFound,
+                    AuthenticationError::UserNotFound.into(),
                     AuthenticationError::UserNotFound.to_string(),
                 ))
                 .unwrap(),
@@ -91,33 +118,36 @@ pub async fn login(authentication_request: Json<AuthenticationRequest>) -> statu
     };
 
     let user_id = user.id.unwrap();
-    let expires_at = (OffsetDateTime::now_utc() + Duration::days(30)).format(&Rfc3339);
-    let expires_at_str = expires_at.unwrap();
-
-    let auth_params = vec![("user_id", &user_id)];
+    let auth_params = vec![("user_id", DatabaseValue::String(user_id.clone()))];
     match find_one_resource_where_fields!(Authentication, auth_params).await {
         Ok(authentication) => {
+            let auth_id = authentication.id.clone();
+            let auth_value = serde_json::to_value(authentication).unwrap();
             match update_resource!(
                 Authentication,
-                authentication.id.clone(),
-                vec![("expires_at", &expires_at_str)]
+                auth_id,
+                vec![(
+                    "expires_at",
+                    DatabaseValue::DateTime(
+                        (OffsetDateTime::now_utc() + Duration::days(30))
+                            .format(&Iso8601::DEFAULT)
+                            .unwrap()
+                    )
+                )]
             )
             .await
             {
                 Ok(_) => status::Custom(
                     Status::Ok,
-                    serde_json::to_value(AuthenticationResponse::success(
-                        serde_json::to_value(authentication).unwrap(),
-                        None,
-                    ))
-                    .unwrap(),
+                    serde_json::to_value(AuthenticationResponse::success(auth_value, None))
+                        .unwrap(),
                 ),
                 Err(err) => {
                     println!("Error: {:?}", err);
                     return status::Custom(
                         Status::InternalServerError,
                         serde_json::to_value(AuthenticationResponse::error(
-                            AuthenticationError::SessionUpdateFailed,
+                            AuthenticationError::SessionUpdateFailed.into(),
                             AuthenticationError::SessionUpdateFailed.to_string(),
                         ))
                         .unwrap(),
@@ -130,7 +160,7 @@ pub async fn login(authentication_request: Json<AuthenticationRequest>) -> statu
             match insert_resource!(
                 Authentication,
                 vec![
-                    ("user_id", DatabaseValue::String(user_id)),
+                    ("user_id", DatabaseValue::String(user_id.clone())),
                     ("token", DatabaseValue::String(token))
                 ]
             )
@@ -148,7 +178,7 @@ pub async fn login(authentication_request: Json<AuthenticationRequest>) -> statu
                     return status::Custom(
                         Status::InternalServerError,
                         serde_json::to_value(AuthenticationResponse::error(
-                            AuthenticationError::SessionCreationFailed,
+                            AuthenticationError::SessionCreationFailed.into(),
                             AuthenticationError::SessionCreationFailed.to_string(),
                         ))
                         .unwrap(),
@@ -178,7 +208,7 @@ pub async fn logout(token: RawToken) -> status::Custom<Value> {
         return status::Custom(
             Status::BadRequest,
             serde_json::to_value(AuthenticationResponse::error(
-                AuthenticationError::SessionNotFound,
+                AuthenticationError::SessionNotFound.into(),
                 AuthenticationError::SessionNotFound.to_string(),
             ))
             .unwrap(),
@@ -190,7 +220,7 @@ pub async fn logout(token: RawToken) -> status::Custom<Value> {
             return status::Custom(
                 Status::BadRequest,
                 serde_json::to_value(AuthenticationResponse::error(
-                    AuthenticationError::InvalidToken,
+                    AuthenticationError::InvalidToken.into(),
                     AuthenticationError::InvalidToken.to_string(),
                 ))
                 .unwrap(),
@@ -198,7 +228,7 @@ pub async fn logout(token: RawToken) -> status::Custom<Value> {
         }
     };
     let token_str = token_value.raw_token.unwrap().clone();
-    let logout_params = vec![("token", &token_str)];
+    let logout_params = vec![("token", DatabaseValue::String(token_str))];
     match delete_resource_where_fields!(Authentication, logout_params).await {
         Ok(_) => status::Custom(
             Status::Ok,
@@ -211,7 +241,7 @@ pub async fn logout(token: RawToken) -> status::Custom<Value> {
         Err(_) => status::Custom(
             Status::BadRequest,
             serde_json::to_value(AuthenticationResponse::error(
-                AuthenticationError::SessionNotFound,
+                AuthenticationError::SessionNotFound.into(),
                 AuthenticationError::SessionNotFound.to_string(),
             ))
             .unwrap(),
@@ -219,8 +249,22 @@ pub async fn logout(token: RawToken) -> status::Custom<Value> {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RegisterRequest {
+    pub username: String,
+    pub password: String,
+    pub first_name: String,
+    pub last_name: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct RegisterResponse {
+    pub user: User,
+    pub backup_codes: Vec<String>,
+}
+
 /// Register a new user
-/// 
+///
 /// Parameters:
 /// - username: String
 /// - password: String
@@ -239,28 +283,63 @@ pub async fn register(register_request: Json<RegisterRequest>) -> status::Custom
     let hashed_password = format!("{:x}", Sha256::digest(register_request.password.as_bytes()));
 
     let register_params = vec![
-        ("username", &register_request.username),
-        ("user_password", &hashed_password),
-    ];
-    match insert_resource!(User, register_params).await {
-        Ok(user) => status::Custom(
-            Status::Ok,
-            serde_json::to_value(AuthenticationResponse::success(
-                serde_json::to_value(user).unwrap(),
-                None,
-            ))
-            .unwrap(),
+        (
+            "username",
+            DatabaseValue::String(register_request.username.clone()),
         ),
+        ("user_password", DatabaseValue::String(hashed_password)),
+        (
+            "first_name",
+            DatabaseValue::String(register_request.first_name.clone()),
+        ),
+        (
+            "last_name",
+            DatabaseValue::String(register_request.last_name.clone()),
+        ),
+    ];
+    let user = match insert_resource!(User, register_params).await {
+        Ok(user) => user,
         Err(err) => {
             println!("Error: {:?}", err);
-            status::Custom(
+            return status::Custom(
                 Status::BadRequest,
                 serde_json::to_value(AuthenticationResponse::error(
-                    AuthenticationError::SessionNotFound,
-                    AuthenticationError::SessionNotFound.to_string(),
+                    UserError::UserCreationFailed.into(),
+                    UserError::UserCreationFailed.to_string(),
                 ))
                 .unwrap(),
-            )
+            );
+        }
+    };
+    let user_id = user.id.clone().unwrap();
+    let backup_codes = generate_backup_codes().await;
+    for code in backup_codes.clone() {
+        let backup_code_params = vec![
+            ("user_id", DatabaseValue::String(user_id.clone())),
+            ("code", DatabaseValue::String(code)),
+        ];
+        match insert_resource!(BackupCode, backup_code_params).await {
+            Ok(_) => (),
+            Err(err) => {
+                println!("Error: {:?}", err);
+                return status::Custom(
+                    Status::BadRequest,
+                    serde_json::to_value(AuthenticationResponse::error(
+                        BackupCodeError::CodeCreationFailed.into(),
+                        BackupCodeError::CodeCreationFailed.to_string(),
+                    ))
+                    .unwrap(),
+                );
+            }
         }
     }
+    let register_response = RegisterResponse {
+        user: user,
+        backup_codes: backup_codes,
+    };
+    let response = AuthenticationResponse::success(
+        serde_json::to_value(register_response).unwrap(),
+        Some("User created successfully".to_string()),
+    );
+    status::Custom(Status::Ok, serde_json::to_value(response).unwrap())
 }

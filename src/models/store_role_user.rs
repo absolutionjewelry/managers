@@ -83,4 +83,12 @@ impl DatabaseResource for StoreRoleUser {
             archived_at: row.get("archived_at"),
         })
     }
+
+    fn is_creatable() -> bool {
+        true
+    }
+
+    fn is_expirable() -> bool {
+        false
+    }
 }

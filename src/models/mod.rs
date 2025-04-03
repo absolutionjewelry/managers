@@ -1,4 +1,5 @@
 pub mod authentication;
+pub mod backup_code;
 pub mod product;
 pub mod store;
 pub mod store_role;

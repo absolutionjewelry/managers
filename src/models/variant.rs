@@ -94,4 +94,12 @@ impl DatabaseResource for Variant {
     fn is_updatable() -> bool {
         true
     }
+
+    fn is_creatable() -> bool {
+        true
+    }
+
+    fn is_expirable() -> bool {
+        false
+    }
 }

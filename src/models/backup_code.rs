@@ -1,42 +1,41 @@
-use crate::database::traits::DatabaseResource;
-use crate::utils::time::{deserialize_offset_date_time, serialize_offset_date_time};
-use rocket::serde::{Deserialize, Serialize};
+use crate::{
+    database::traits::DatabaseResource,
+    utils::time::{deserialize_offset_date_time, serialize_offset_date_time},
+};
+use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgRow, Error, Row};
-use std::fmt;
 use time::OffsetDateTime;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub enum UserError {
-    UserCreationFailed,
-    UserUpdateFailed,
-    UserDeletionFailed,
-    UserNotFound,
+pub enum BackupCodeError {
+    CodeAlreadyUsed,
+    CodeNotFound,
+    CodeExpired,
+    CodeNotValid,
+    CodeCreationFailed,
+    CodeVerificationFailed,
+    CodeDeletionFailed,
 }
 
-impl fmt::Display for UserError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl BackupCodeError {
+    pub fn to_string(&self) -> String {
         match self {
-            UserError::UserCreationFailed => write!(f, "User creation failed"),
-            UserError::UserUpdateFailed => write!(f, "User update failed"),
-            UserError::UserDeletionFailed => write!(f, "User deletion failed"),
-            UserError::UserNotFound => write!(f, "User not found"),
+            BackupCodeError::CodeAlreadyUsed => "Code already used".to_string(),
+            BackupCodeError::CodeNotFound => "Code not found".to_string(),
+            BackupCodeError::CodeExpired => "Code expired".to_string(),
+            BackupCodeError::CodeNotValid => "Code not valid".to_string(),
+            BackupCodeError::CodeCreationFailed => "Code creation failed".to_string(),
+            BackupCodeError::CodeVerificationFailed => "Code verification failed".to_string(),
+            BackupCodeError::CodeDeletionFailed => "Code deletion failed".to_string(),
         }
     }
 }
 
-impl std::error::Error for UserError {}
-
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct User {
+pub struct BackupCode {
     pub id: Option<String>,
-    pub first_name: Option<String>,
-    pub last_name: Option<String>,
-    pub username: Option<String>,
-
-    #[allow(dead_code)]
-    #[serde(skip_serializing, skip_deserializing)]
-    pub password: Option<String>,
+    pub code: Option<String>,
+    pub user_id: Option<String>,
 
     #[serde(
         serialize_with = "serialize_offset_date_time",
@@ -57,14 +56,12 @@ pub struct User {
     pub archived_at: Option<OffsetDateTime>,
 }
 
-impl DatabaseResource for User {
+impl DatabaseResource for BackupCode {
     fn from_row(row: &PgRow) -> Result<Self, Error> {
-        Ok(User {
+        Ok(Self {
             id: row.get("id"),
-            first_name: row.get("first_name"),
-            last_name: row.get("last_name"),
-            username: row.get("username"),
-            password: row.get("user_password"),
+            code: row.get("code"),
+            user_id: row.get("user_id"),
             created_at: row.get("created_at"),
             updated_at: row.get("updated_at"),
             archived_at: row.get("archived_at"),

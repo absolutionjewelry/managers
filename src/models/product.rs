@@ -92,4 +92,12 @@ impl DatabaseResource for Product {
     fn is_updatable() -> bool {
         true
     }
+
+    fn is_creatable() -> bool {
+        true
+    }
+
+    fn is_expirable() -> bool {
+        false
+    }
 }

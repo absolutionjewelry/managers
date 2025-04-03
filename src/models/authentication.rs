@@ -89,6 +89,14 @@ impl DatabaseResource for Authentication {
     fn is_updatable() -> bool {
         true
     }
+
+    fn is_creatable() -> bool {
+        true
+    }
+
+    fn is_expirable() -> bool {
+        true
+    }
 }
 
 fn serialize_offset_date_time<S>(

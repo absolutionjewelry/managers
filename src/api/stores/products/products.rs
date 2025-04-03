@@ -33,7 +33,10 @@ pub async fn get_products(store_id: String, token: RawToken) -> status::Custom<V
 
     let user_id = token.user_id;
 
-    let store_params = vec![("id", &store_id), ("owner_id", &user_id)];
+    let store_params = vec![
+        ("id", DatabaseValue::String(store_id.clone())),
+        ("owner_id", DatabaseValue::String(user_id.clone())),
+    ];
     let store_id = match find_one_resource_where_fields!(Store, store_params).await {
         Ok(store) => store.id,
         Err(_) => {
@@ -48,7 +51,7 @@ pub async fn get_products(store_id: String, token: RawToken) -> status::Custom<V
         }
     };
 
-    let product_params = vec![("store_id", &store_id)];
+    let product_params = vec![("store_id", DatabaseValue::String(store_id))];
     match find_all_resources_where_fields!(Product, product_params).await {
         Ok(products) => status::Custom(
             Status::Ok,
@@ -87,7 +90,10 @@ pub async fn get_unarchived_products(store_id: String, token: RawToken) -> statu
 
     let user_id = token.user_id;
 
-    let store_params = vec![("id", &store_id), ("owner_id", &user_id)];
+    let store_params = vec![
+        ("id", DatabaseValue::String(store_id.clone())),
+        ("owner_id", DatabaseValue::String(user_id.clone())),
+    ];
     let store_id = match find_one_resource_where_fields!(Store, store_params).await {
         Ok(store) => store.id,
         Err(_) => {
@@ -102,7 +108,7 @@ pub async fn get_unarchived_products(store_id: String, token: RawToken) -> statu
         }
     };
 
-    let product_params = vec![("store_id", &store_id)];
+    let product_params = vec![("store_id", DatabaseValue::String(store_id))];
     match find_all_unarchived_resources_where_fields!(Product, product_params).await {
         Ok(products) => status::Custom(
             Status::Ok,
@@ -141,7 +147,10 @@ pub async fn get_archived_products(store_id: String, token: RawToken) -> status:
 
     let user_id = token.user_id;
 
-    let store_params = vec![("id", &store_id), ("owner_id", &user_id)];
+    let store_params = vec![
+        ("id", DatabaseValue::String(store_id.clone())),
+        ("owner_id", DatabaseValue::String(user_id.clone())),
+    ];
     let store_id = match find_one_resource_where_fields!(Store, store_params).await {
         Ok(store) => store.id,
         Err(_) => {
@@ -156,7 +165,7 @@ pub async fn get_archived_products(store_id: String, token: RawToken) -> status:
         }
     };
 
-    let product_params = vec![("store_id", &store_id)];
+    let product_params = vec![("store_id", DatabaseValue::String(store_id))];
     match find_all_archived_resources_where_fields!(Product, product_params).await {
         Ok(products) => status::Custom(
             Status::Ok,
@@ -200,9 +209,9 @@ pub async fn get_product(
     let user_id = token.user_id;
 
     let product_params = vec![
-        ("id", &product_id),
-        ("store_id", &store_id),
-        ("owner_id", &user_id),
+        ("id", DatabaseValue::String(product_id)),
+        ("store_id", DatabaseValue::String(store_id)),
+        ("owner_id", DatabaseValue::String(user_id)),
     ];
     match find_one_resource_where_fields!(Product, product_params).await {
         Ok(product) => status::Custom(
@@ -246,7 +255,10 @@ pub async fn create_product(
 
     let user_id = token.user_id;
 
-    let store_params = vec![("id", &store_id), ("owner_id", &user_id)];
+    let store_params = vec![
+        ("id", DatabaseValue::String(store_id.clone())),
+        ("owner_id", DatabaseValue::String(user_id.clone())),
+    ];
     let store_id = match find_one_resource_where_fields!(Store, store_params).await {
         Ok(store) => store.id,
         Err(_) => {
@@ -275,11 +287,16 @@ pub async fn create_product(
         ),
         (
             "product_base_price",
-            DatabaseValue::Float(product.product_base_price.unwrap_or_default()),
+            DatabaseValue::Float(product.product_base_price.unwrap_or_default().to_string()),
         ),
         (
             "product_base_quantity",
-            DatabaseValue::Int(product.product_base_quantity.unwrap_or_default()),
+            DatabaseValue::Int(
+                product
+                    .product_base_quantity
+                    .unwrap_or_default()
+                    .to_string(),
+            ),
         ),
     ];
 
@@ -326,7 +343,10 @@ pub async fn update_product(
 
     let user_id = token.user_id;
 
-    let store_params = vec![("id", &store_id), ("owner_id", &user_id)];
+    let store_params = vec![
+        ("id", DatabaseValue::String(store_id.clone())),
+        ("owner_id", DatabaseValue::String(user_id.clone())),
+    ];
     let _ = match find_one_resource_where_fields!(Store, store_params).await {
         Ok(store) => store.id,
         Err(_) => {
@@ -353,19 +373,19 @@ pub async fn update_product(
         ),
         (
             "product_base_price",
-            DatabaseValue::Float(product.product_base_price.unwrap()),
+            DatabaseValue::Float(product.product_base_price.unwrap().to_string()),
         ),
         (
             "product_base_cost",
-            DatabaseValue::Float(product.product_base_cost.unwrap()),
+            DatabaseValue::Float(product.product_base_cost.unwrap().to_string()),
         ),
         (
             "product_base_quantity",
-            DatabaseValue::Int(product.product_base_quantity.unwrap()),
+            DatabaseValue::Int(product.product_base_quantity.unwrap().to_string()),
         ),
     ];
-
-    match update_resource!(Product, &product_id, product_params).await {
+    let product_id = product_id.clone();
+    match update_resource!(Product, product_id, product_params).await {
         Ok(product) => status::Custom(
             Status::Ok,
             serde_json::to_value(&Response::success(
@@ -407,7 +427,10 @@ pub async fn delete_product(
 
     let user_id = token.user_id;
 
-    let store_params = vec![("id", &store_id), ("owner_id", &user_id)];
+    let store_params = vec![
+        ("id", DatabaseValue::String(store_id.clone())),
+        ("owner_id", DatabaseValue::String(user_id.clone())),
+    ];
     let store_id = match find_one_resource_where_fields!(Store, store_params).await {
         Ok(store) => store.id,
         Err(_) => {
@@ -422,7 +445,10 @@ pub async fn delete_product(
         }
     };
 
-    let product_params = vec![("id", &product_id), ("store_id", &store_id)];
+    let product_params = vec![
+        ("id", DatabaseValue::String(product_id.clone())),
+        ("store_id", DatabaseValue::String(store_id)),
+    ];
     match delete_resource_where_fields!(Product, product_params).await {
         Ok(_) => status::Custom(
             Status::Ok,

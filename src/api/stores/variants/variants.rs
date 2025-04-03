@@ -34,7 +34,10 @@ pub async fn get_variants(store_id: String, token: RawToken) -> status::Custom<V
 
     let user_id = token.user_id;
 
-    let store_params = vec![("id", &store_id), ("owner_id", &user_id)];
+    let store_params = vec![
+        ("id", DatabaseValue::String(store_id.clone())),
+        ("owner_id", DatabaseValue::String(user_id)),
+    ];
     let store_id = match find_one_resource_where_fields!(Store, store_params).await {
         Ok(store) => store.id,
         Err(_) => {
@@ -49,7 +52,7 @@ pub async fn get_variants(store_id: String, token: RawToken) -> status::Custom<V
         }
     };
 
-    let variant_params = vec![("store_id", &store_id)];
+    let variant_params = vec![("store_id", DatabaseValue::String(store_id))];
     let variants = match find_all_resources_where_fields!(Variant, variant_params).await {
         Ok(variants) => variants,
         Err(_) => {
@@ -92,7 +95,10 @@ pub async fn get_archived_variants(store_id: String, token: RawToken) -> status:
 
     let user_id = token.user_id;
 
-    let store_params = vec![("id", &store_id), ("owner_id", &user_id)];
+    let store_params = vec![
+        ("id", DatabaseValue::String(store_id.clone())),
+        ("owner_id", DatabaseValue::String(user_id)),
+    ];
     let store_id = match find_one_resource_where_fields!(Store, store_params).await {
         Ok(store) => store.id,
         Err(_) => {
@@ -107,7 +113,7 @@ pub async fn get_archived_variants(store_id: String, token: RawToken) -> status:
         }
     };
 
-    let variant_params = vec![("store_id", &store_id)];
+    let variant_params = vec![("store_id", DatabaseValue::String(store_id))];
     let variants = match find_all_archived_resources_where_fields!(Variant, variant_params).await {
         Ok(variants) => variants,
         Err(_) => {
@@ -150,7 +156,10 @@ pub async fn get_unarchived_variants(store_id: String, token: RawToken) -> statu
 
     let user_id = token.user_id;
 
-    let store_params = vec![("id", &store_id), ("owner_id", &user_id)];
+    let store_params = vec![
+        ("id", DatabaseValue::String(store_id.clone())),
+        ("owner_id", DatabaseValue::String(user_id)),
+    ];
     let store_id = match find_one_resource_where_fields!(Store, store_params).await {
         Ok(store) => store.id,
         Err(_) => {
@@ -165,7 +174,7 @@ pub async fn get_unarchived_variants(store_id: String, token: RawToken) -> statu
         }
     };
 
-    let variant_params = vec![("store_id", &store_id)];
+    let variant_params = vec![("store_id", DatabaseValue::String(store_id))];
     let variants = match find_all_unarchived_resources_where_fields!(Variant, variant_params).await
     {
         Ok(variants) => variants,
@@ -213,7 +222,10 @@ pub async fn get_variant(
 
     let user_id = token.user_id;
 
-    let store_params = vec![("id", &store_id), ("owner_id", &user_id)];
+    let store_params = vec![
+        ("id", DatabaseValue::String(store_id.clone())),
+        ("owner_id", DatabaseValue::String(user_id)),
+    ];
     let store_id = match find_one_resource_where_fields!(Store, store_params).await {
         Ok(store) => store.id,
         Err(_) => {
@@ -228,7 +240,10 @@ pub async fn get_variant(
         }
     };
 
-    let variant_params = vec![("id", &variant_id), ("store_id", &store_id)];
+    let variant_params = vec![
+        ("id", DatabaseValue::String(variant_id)),
+        ("store_id", DatabaseValue::String(store_id)),
+    ];
     let variant = match find_one_resource_where_fields!(Variant, variant_params).await {
         Ok(variant) => variant,
         Err(_) => {
@@ -275,7 +290,10 @@ pub async fn create_variant(
 
     let user_id = token.user_id;
 
-    let store_params = vec![("id", &store_id), ("owner_id", &user_id)];
+    let store_params = vec![
+        ("id", DatabaseValue::String(store_id.clone())),
+        ("owner_id", DatabaseValue::String(user_id)),
+    ];
     let _ = match find_one_resource_where_fields!(Store, store_params).await {
         Ok(store) => store.id,
         Err(_) => {
@@ -302,15 +320,15 @@ pub async fn create_variant(
         ),
         (
             "variant_base_cost",
-            DatabaseValue::Float(variant.variant_base_cost.unwrap()),
+            DatabaseValue::Float(variant.variant_base_cost.unwrap().to_string()),
         ),
         (
             "variant_base_price",
-            DatabaseValue::Float(variant.variant_base_price.unwrap()),
+            DatabaseValue::Float(variant.variant_base_price.unwrap().to_string()),
         ),
         (
             "variant_base_quantity",
-            DatabaseValue::Int(variant.variant_base_quantity.unwrap()),
+            DatabaseValue::Int(variant.variant_base_quantity.unwrap().to_string()),
         ),
     ];
 
@@ -361,7 +379,10 @@ pub async fn update_variant(
 
     let user_id = token.user_id;
 
-    let store_params = vec![("id", &store_id), ("owner_id", &user_id)];
+    let store_params = vec![
+        ("id", DatabaseValue::String(store_id.clone())),
+        ("owner_id", DatabaseValue::String(user_id)),
+    ];
     let _ = match find_one_resource_where_fields!(Store, store_params).await {
         Ok(store) => store.id,
         Err(_) => {
@@ -388,19 +409,21 @@ pub async fn update_variant(
         ),
         (
             "variant_base_cost",
-            DatabaseValue::Float(variant.variant_base_cost.unwrap()),
+            DatabaseValue::Float(variant.variant_base_cost.unwrap().to_string()),
         ),
         (
             "variant_base_price",
-            DatabaseValue::Float(variant.variant_base_price.unwrap()),
+            DatabaseValue::Float(variant.variant_base_price.unwrap().to_string()),
         ),
         (
             "variant_base_quantity",
-            DatabaseValue::Int(variant.variant_base_quantity.unwrap()),
+            DatabaseValue::Int(variant.variant_base_quantity.unwrap().to_string()),
         ),
     ];
 
-    let variant = match update_resource!(Variant, &variant_id, variant_params).await {
+    let variant_id = variant_id.clone();
+    let variant_params = variant_params.clone();
+    let variant = match update_resource!(Variant, variant_id, variant_params).await {
         Ok(variant) => variant,
         Err(_) => {
             return status::Custom(
@@ -446,7 +469,10 @@ pub async fn delete_variant(
 
     let user_id = token.user_id;
 
-    let store_params = vec![("id", &store_id), ("owner_id", &user_id)];
+    let store_params = vec![
+        ("id", DatabaseValue::String(store_id.clone())),
+        ("owner_id", DatabaseValue::String(user_id)),
+    ];
     let _ = match find_one_resource_where_fields!(Store, store_params).await {
         Ok(store) => store.id,
         Err(_) => {
@@ -461,7 +487,10 @@ pub async fn delete_variant(
         }
     };
 
-    let variant_params = vec![("id", &variant_id), ("store_id", &store_id)];
+    let variant_params = vec![
+        ("id", DatabaseValue::String(variant_id.clone())),
+        ("store_id", DatabaseValue::String(store_id.clone())),
+    ];
     match delete_resource_where_fields!(Variant, variant_params).await {
         Ok(_) => status::Custom(
             Status::Ok,
