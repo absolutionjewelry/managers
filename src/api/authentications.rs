@@ -250,6 +250,7 @@ pub async fn logout(token: RawToken) -> status::Custom<Value> {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RegisterRequest {
     pub username: String,
     pub password: String,
@@ -258,6 +259,7 @@ pub struct RegisterRequest {
 }
 
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RegisterResponse {
     pub user: User,
     pub backup_codes: Vec<String>,
