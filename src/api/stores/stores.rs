@@ -348,49 +348,93 @@ pub async fn create_store(store: Json<CreateStore>, token: RawToken) -> status::
     };
     let user_id = token.user_id;
 
-    let params = vec![
-        ("owner_id", DatabaseValue::String(user_id)),
+    // Does the store already exists?
+    let exists_params = vec![
+        ("owner_id", DatabaseValue::String(user_id.clone())),
         (
             "store_name",
             DatabaseValue::String(store.store_name.clone()),
         ),
-        (
-            "store_description",
-            DatabaseValue::String(store.store_description.clone().unwrap_or_default()),
-        ),
     ];
-    match insert_resource!(Store, params).await {
-        Ok(_) => status::Custom(
-            Status::Ok,
-            serde_json::to_value(&Response::success(
-                serde_json::json!(store.into_inner()),
-                Some("Store created successfully".to_string()),
-            ))
-            .unwrap(),
-        ),
-        Err(err) => {
-            println!("Error creating store: {:?}", err);
-            if err
-                .to_string()
-                .contains("duplicate key value violates unique constraint")
-            {
-                return status::Custom(
-                    Status::BadRequest,
-                    serde_json::to_value(&Response::error(
-                        anyhow::anyhow!(StoreError::StoreNameAlreadyExists),
-                        StoreError::StoreNameAlreadyExists.to_string(),
-                    ))
-                    .unwrap(),
-                );
+    match find_one_resource_where_fields!(Store, exists_params).await {
+        Ok(existing_store) => {
+            // If the store is archived, unarchive it and update the description
+            if existing_store.archived_at.is_some() {
+                let update_params = vec![
+                    ("archived_at", DatabaseValue::None),
+                    (
+                        "store_description",
+                        DatabaseValue::String(store.store_description.clone().unwrap_or_default()),
+                    ),
+                ];
+                match update_resource!(Store, existing_store.id, update_params).await {
+                    Ok(updated_store) => {
+                        return status::Custom(
+                            Status::Ok,
+                            serde_json::to_value(&Response::success(
+                                serde_json::json!(updated_store),
+                                Some("Store updated successfully".to_string()),
+                            ))
+                            .unwrap(),
+                        );
+                    }
+                    Err(err) => {
+                        println!("Error updating store: {:?}", err);
+                        return status::Custom(
+                            Status::InternalServerError,
+                            serde_json::to_value(&Response::error(
+                                anyhow::anyhow!(StoreError::StoreUpdateFailed),
+                                StoreError::StoreUpdateFailed.to_string(),
+                            ))
+                            .unwrap(),
+                        );
+                    }
+                }
             }
-            status::Custom(
-                Status::InternalServerError,
+            // If the store is not archived, return an error
+            return status::Custom(
+                Status::BadRequest,
                 serde_json::to_value(&Response::error(
-                    anyhow::anyhow!(StoreError::StoreCreationFailed),
-                    StoreError::StoreCreationFailed.to_string(),
+                    anyhow::anyhow!(StoreError::StoreNameAlreadyExists),
+                    StoreError::StoreNameAlreadyExists.to_string(),
                 ))
                 .unwrap(),
-            )
+            );
+        }
+        Err(_) => {
+            // If the store does not exist, create it
+            let params = vec![
+                ("owner_id", DatabaseValue::String(user_id.clone())),
+                (
+                    "store_name",
+                    DatabaseValue::String(store.store_name.clone()),
+                ),
+                (
+                    "store_description",
+                    DatabaseValue::String(store.store_description.clone().unwrap_or_default()),
+                ),
+            ];
+            match insert_resource!(Store, params).await {
+                Ok(_) => status::Custom(
+                    Status::Ok,
+                    serde_json::to_value(&Response::success(
+                        serde_json::json!(store.into_inner()),
+                        Some("Store created successfully".to_string()),
+                    ))
+                    .unwrap(),
+                ),
+                Err(err) => {
+                    println!("Error creating store: {:?}", err);
+                    status::Custom(
+                        Status::InternalServerError,
+                        serde_json::to_value(&Response::error(
+                            anyhow::anyhow!(StoreError::StoreCreationFailed),
+                            StoreError::StoreCreationFailed.to_string(),
+                        ))
+                        .unwrap(),
+                    )
+                }
+            }
         }
     }
 }
