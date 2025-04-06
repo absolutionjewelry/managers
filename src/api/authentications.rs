@@ -218,6 +218,113 @@ pub async fn login(authentication_request: Json<AuthenticationRequest>) -> statu
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResetPasswordRequest {
+    pub username: String,
+    pub code: String,
+    pub new_password: String,
+}
+
+#[post("/reset-password", data = "<reset_password_request>")]
+pub async fn reset_password(
+    reset_password_request: Json<ResetPasswordRequest>,
+) -> status::Custom<Value> {
+    let user_params = vec![(
+        "username",
+        DatabaseValue::String(reset_password_request.username.clone()),
+    )];
+    let user = match find_one_resource_where_fields!(User, user_params).await {
+        Ok(user) => user,
+        Err(_) => {
+            return status::Custom(
+                Status::NotFound,
+                serde_json::to_value(AuthenticationResponse::error(
+                    AuthenticationError::UserNotFound.into(),
+                    AuthenticationError::UserNotFound.to_string(),
+                ))
+                .unwrap(),
+            )
+        }
+    };
+    let user_id = user.id.unwrap();
+    let backup_code_params = vec![
+        ("user_id", DatabaseValue::String(user_id.clone())),
+        (
+            "code",
+            DatabaseValue::String(reset_password_request.code.clone()),
+        ),
+    ];
+    let backup_code = match find_one_resource_where_fields!(BackupCode, backup_code_params).await {
+        Ok(backup_code) => backup_code,
+        Err(_) => {
+            return status::Custom(
+                Status::NotFound,
+                serde_json::to_value(AuthenticationResponse::error(
+                    BackupCodeError::CodeNotFound.into(),
+                    BackupCodeError::CodeNotFound.to_string(),
+                ))
+                .unwrap(),
+            )
+        }
+    };
+    if backup_code.used.unwrap() {
+        return status::Custom(
+            Status::BadRequest,
+            serde_json::to_value(AuthenticationResponse::error(
+                BackupCodeError::CodeAlreadyUsed.into(),
+                BackupCodeError::CodeAlreadyUsed.to_string(),
+            ))
+            .unwrap(),
+        );
+    }
+    let backup_code_id = backup_code.id.unwrap();
+
+    let update_backup_code_params = vec![("used", DatabaseValue::Boolean(true.to_string()))];
+    match update_resource!(BackupCode, backup_code_id, update_backup_code_params).await {
+        Ok(_) => (),
+        Err(_) => {
+            return status::Custom(
+                Status::InternalServerError,
+                serde_json::to_value(AuthenticationResponse::error(
+                    BackupCodeError::CodeUpdateFailed.into(),
+                    BackupCodeError::CodeUpdateFailed.to_string(),
+                ))
+                .unwrap(),
+            )
+        }
+    };
+
+    let hashed_password = format!(
+        "{:x}",
+        Sha256::digest(reset_password_request.new_password.as_bytes())
+    );
+    let update_params = vec![("user_password", DatabaseValue::String(hashed_password))];
+    match update_resource!(User, user_id, update_params).await {
+        Ok(_) => status::Custom(
+            Status::Ok,
+            serde_json::to_value(AuthenticationResponse::success(
+                serde_json::json!(null),
+                Some("Password reset successfully".to_string()),
+            ))
+            .unwrap(),
+        ),
+        Err(_) => status::Custom(
+            Status::InternalServerError,
+            serde_json::to_value(AuthenticationResponse::error(
+                UserError::UserUpdateFailed.into(),
+                UserError::UserUpdateFailed.to_string(),
+            ))
+            .unwrap(),
+        ),
+    };
+    login(Json(AuthenticationRequest {
+        username: reset_password_request.username.clone(),
+        password: reset_password_request.new_password.clone(),
+    }))
+    .await
+}
+
 /// Logout from the system
 ///
 /// Invalidates the current user session by deleting their authentication token.

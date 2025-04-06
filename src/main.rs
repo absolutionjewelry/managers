@@ -24,7 +24,8 @@ async fn main() -> anyhow::Result<()> {
             routes![
                 api::authentications::login,
                 api::authentications::logout,
-                api::authentications::register
+                api::authentications::register,
+                api::authentications::reset_password,
             ],
         )
         .mount(

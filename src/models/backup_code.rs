@@ -15,6 +15,7 @@ pub enum BackupCodeError {
     CodeCreationFailed,
     CodeVerificationFailed,
     CodeDeletionFailed,
+    CodeUpdateFailed,
 }
 
 impl BackupCodeError {
@@ -27,6 +28,7 @@ impl BackupCodeError {
             BackupCodeError::CodeCreationFailed => "Code creation failed".to_string(),
             BackupCodeError::CodeVerificationFailed => "Code verification failed".to_string(),
             BackupCodeError::CodeDeletionFailed => "Code deletion failed".to_string(),
+            BackupCodeError::CodeUpdateFailed => "Code update failed".to_string(),
         }
     }
 }
@@ -36,6 +38,7 @@ pub struct BackupCode {
     pub id: Option<String>,
     pub code: Option<String>,
     pub user_id: Option<String>,
+    pub used: Option<bool>,
 
     #[serde(
         serialize_with = "serialize_offset_date_time",
@@ -62,6 +65,7 @@ impl DatabaseResource for BackupCode {
             id: row.get("id"),
             code: row.get("code"),
             user_id: row.get("user_id"),
+            used: row.get("used"),
             created_at: row.get("created_at"),
             updated_at: row.get("updated_at"),
             archived_at: row.get("archived_at"),
