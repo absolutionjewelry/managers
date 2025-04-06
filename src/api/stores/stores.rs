@@ -12,7 +12,7 @@ use crate::{
 use rocket::http::Status;
 use rocket::response::status;
 use rocket::serde::json::{Json, Value};
-
+use serde::{Deserialize, Serialize};
 #[get("/")]
 pub async fn get_stores(token: RawToken) -> status::Custom<Value> {
     let token = match VerifiedToken::from_raw(token).await {
@@ -168,8 +168,15 @@ pub async fn get_store(store_id: String, token: RawToken) -> status::Custom<Valu
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateStore {
+    pub store_name: String,
+    pub store_description: Option<String>,
+}
+
 #[post("/", data = "<store>")]
-pub async fn create_store(store: Json<Store>, token: RawToken) -> status::Custom<Value> {
+pub async fn create_store(store: Json<CreateStore>, token: RawToken) -> status::Custom<Value> {
     let token = match VerifiedToken::from_raw(token).await {
         Ok(token) => token,
         Err(_) => {
@@ -193,7 +200,7 @@ pub async fn create_store(store: Json<Store>, token: RawToken) -> status::Custom
         ),
         (
             "store_description",
-            DatabaseValue::String(store.store_description.clone()),
+            DatabaseValue::String(store.store_description.clone().unwrap_or_default()),
         ),
     ];
     match insert_resource!(Store, params).await {
