@@ -1,3 +1,25 @@
+//! Variants API endpoints
+//!
+//! This module provides REST API endpoints for managing product variants within a store.
+//! Variants represent different versions or configurations of products (e.g. sizes, colors, materials).
+//!
+//! # Authentication
+//! All endpoints in this module require authentication via a bearer token. The token must be valid
+//! and belong to the owner of the store being accessed.
+//!
+//! # Common Error Responses
+//! - 401 Unauthorized: Invalid or missing authentication token
+//! - 404 Not Found: Store or variant not found
+//! - 500 Internal Server Error: Database or server-side errors
+//!
+//! # Resource Structure
+//! Variants have the following main attributes:
+//! - variant_name: Name/identifier of the variant (e.g. "Large", "Red")
+//! - variant_description: Detailed description of the variant
+//! - variant_base_cost: Base cost for the variant
+//! - variant_base_price: Retail price for the variant
+//! - variant_base_quantity: Available stock quantity
+
 use crate::api::response::Response;
 use crate::api::token::{validate_token, RawToken};
 use crate::database::values::DatabaseValue;
@@ -15,6 +37,52 @@ use rocket::http::Status;
 use rocket::response::status;
 use rocket::serde::json::{Json, Value};
 
+/// Get all variants for a store
+///
+/// Retrieves a list of all variants (both archived and unarchived) belonging to the specified store.
+/// Results are returned in chronological order by creation date.
+///
+/// # Authorization
+/// Requires a valid authentication token belonging to the store owner.
+///
+/// # Path Parameters
+/// * `store_id` - Unique identifier of the store
+///
+/// # Query Parameters
+/// None
+///
+/// # Response Format
+/// Returns a JSON array of variant objects on success:
+/// ```json
+/// {
+///   "data": [
+///     {
+///       "id": "variant_123",
+///       "variant_name": "Large",
+///       "variant_description": "Large size option",
+///       "variant_base_cost": 10.00,
+///       "variant_base_price": 19.99,
+///       "variant_base_quantity": 100,
+///       "archived": false,
+///       "created_at": "2024-01-01T00:00:00Z",
+///       "updated_at": "2024-01-01T00:00:00Z"
+///     },
+///     // ... additional variants
+///   ],
+///   "message": "Variants fetched successfully"
+/// }
+/// ```
+///
+/// # Errors
+/// * 401 Unauthorized - Invalid authentication token
+/// * 404 Not Found - Store not found or no variants exist
+///
+/// # Example
+/// ```bash
+/// curl -X GET \
+///   'http://localhost:8000/api/stores/store_123/variants' \
+///   -H 'Authorization: Bearer your_token_here'
+/// ```
 #[get("/<store_id>/variants")]
 pub async fn get_variants(store_id: String, token: RawToken) -> status::Custom<Value> {
     let token = match validate_token(token).await {
@@ -76,6 +144,26 @@ pub async fn get_variants(store_id: String, token: RawToken) -> status::Custom<V
     )
 }
 
+/// Get archived variants for a store
+///
+/// Returns a list of only archived variants belonging to the specified store.
+/// Requires authentication and store ownership verification.
+///
+/// # Arguments
+/// * `store_id` - The ID of the store to get archived variants from
+/// * `token` - Authentication token
+///
+/// # Returns
+/// * Success (200) - List of archived variants with success message
+/// * Unauthorized (401) - If authentication token is invalid
+/// * Not Found (404) - If store not found or no archived variants exist
+///
+/// # Example
+/// ```bash
+/// curl -X GET \
+///   'http://localhost:8000/api/stores/store_123/variants/archived' \
+///   -H 'Authorization: Bearer your_token_here'
+/// ```
 #[get("/<store_id>/variants/archived", rank = 1)]
 pub async fn get_archived_variants(store_id: String, token: RawToken) -> status::Custom<Value> {
     let token = match validate_token(token).await {
@@ -137,6 +225,26 @@ pub async fn get_archived_variants(store_id: String, token: RawToken) -> status:
     )
 }
 
+/// Get unarchived variants for a store
+///
+/// Returns a list of only unarchived variants belonging to the specified store.
+/// Requires authentication and store ownership verification.
+///
+/// # Arguments
+/// * `store_id` - The ID of the store to get unarchived variants from
+/// * `token` - Authentication token
+///
+/// # Returns
+/// * Success (200) - List of unarchived variants with success message
+/// * Unauthorized (401) - If authentication token is invalid
+/// * Not Found (404) - If store not found or no unarchived variants exist
+///
+/// # Example
+/// ```bash
+/// curl -X GET \
+///   'http://localhost:8000/api/stores/store_123/variants/unarchived' \
+///   -H 'Authorization: Bearer your_token_here'
+/// ```
 #[get("/<store_id>/variants/unarchived", rank = 2)]
 pub async fn get_unarchived_variants(store_id: String, token: RawToken) -> status::Custom<Value> {
     let token = match validate_token(token).await {
@@ -199,6 +307,27 @@ pub async fn get_unarchived_variants(store_id: String, token: RawToken) -> statu
     )
 }
 
+/// Get a specific variant by ID
+///
+/// Returns details for a single variant identified by its ID.
+/// Requires authentication and store ownership verification.
+///
+/// # Arguments
+/// * `store_id` - The ID of the store containing the variant
+/// * `variant_id` - The ID of the variant to retrieve
+/// * `token` - Authentication token
+///
+/// # Returns
+/// * Success (200) - Variant details with success message
+/// * Unauthorized (401) - If authentication token is invalid
+/// * Not Found (404) - If store or variant not found
+///
+/// # Example
+/// ```bash
+/// curl -X GET \
+///   'http://localhost:8000/api/stores/store_123/variants/variant_456' \
+///   -H 'Authorization: Bearer your_token_here'
+/// ```
 #[get("/<store_id>/variants/<variant_id>", rank = 3)]
 pub async fn get_variant(
     store_id: String,
@@ -267,6 +396,36 @@ pub async fn get_variant(
     )
 }
 
+/// Create a new variant
+///
+/// Creates a new variant in the specified store with the provided details.
+/// Requires authentication and store ownership verification.
+///
+/// # Arguments
+/// * `store_id` - The ID of the store to create the variant in
+/// * `variant` - JSON payload containing variant details
+/// * `token` - Authentication token
+///
+/// # Returns
+/// * Success (200) - Created variant details with success message
+/// * Unauthorized (401) - If authentication token is invalid
+/// * Not Found (404) - If store not found
+/// * Internal Server Error (500) - If variant creation fails
+///
+/// # Example
+/// ```bash
+/// curl -X POST \
+///   'http://localhost:8000/api/stores/store_123/variants' \
+///   -H 'Authorization: Bearer your_token_here' \
+///   -H 'Content-Type: application/json' \
+///   -d '{
+///     "variant_name": "Large",
+///     "variant_description": "Large size option",
+///     "variant_base_cost": 10.00,
+///     "variant_base_price": 19.99,
+///     "variant_base_quantity": 100
+///   }'
+/// ```
 #[post("/<store_id>/variants", data = "<variant>")]
 pub async fn create_variant(
     store_id: String,
@@ -355,6 +514,37 @@ pub async fn create_variant(
     )
 }
 
+/// Update an existing variant
+///
+/// Updates the details of an existing variant identified by its ID.
+/// Requires authentication and store ownership verification.
+///
+/// # Arguments
+/// * `store_id` - The ID of the store containing the variant
+/// * `variant_id` - The ID of the variant to update
+/// * `variant` - JSON payload containing updated variant details
+/// * `token` - Authentication token
+///
+/// # Returns
+/// * Success (200) - Updated variant details with success message
+/// * Unauthorized (401) - If authentication token is invalid
+/// * Not Found (404) - If store not found
+/// * Internal Server Error (500) - If variant update fails
+///
+/// # Example
+/// ```bash
+/// curl -X PUT \
+///   'http://localhost:8000/api/stores/store_123/variants/variant_456' \
+///   -H 'Authorization: Bearer your_token_here' \
+///   -H 'Content-Type: application/json' \
+///   -d '{
+///     "variant_name": "Extra Large",
+///     "variant_description": "Extra large size option",
+///     "variant_base_cost": 12.00,
+///     "variant_base_price": 24.99,
+///     "variant_base_quantity": 50
+///   }'
+/// ```
 #[put("/<store_id>/variants/<variant_id>", data = "<variant>")]
 pub async fn update_variant(
     store_id: String,
@@ -446,6 +636,28 @@ pub async fn update_variant(
     )
 }
 
+/// Delete a variant
+///
+/// Deletes a variant identified by its ID from the specified store.
+/// Requires authentication and store ownership verification.
+///
+/// # Arguments
+/// * `store_id` - The ID of the store containing the variant
+/// * `variant_id` - The ID of the variant to delete
+/// * `token` - Authentication token
+///
+/// # Returns
+/// * Success (200) - Success message
+/// * Unauthorized (401) - If authentication token is invalid
+/// * Not Found (404) - If store not found
+/// * Internal Server Error (500) - If variant deletion fails
+///
+/// # Example
+/// ```bash
+/// curl -X DELETE \
+///   'http://localhost:8000/api/stores/store_123/variants/variant_456' \
+///   -H 'Authorization: Bearer your_token_here'
+/// ```
 #[delete("/<store_id>/variants/<variant_id>")]
 pub async fn delete_variant(
     store_id: String,

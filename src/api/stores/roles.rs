@@ -12,6 +12,44 @@ use rocket::http::Status;
 use rocket::response::status;
 use rocket::serde::json::{Json, Value};
 
+/// Get all roles for a store
+///
+/// Retrieves all roles associated with the specified store. The requesting user must be
+/// the store owner.
+///
+/// # Authorization
+/// Requires a valid bearer token from a store owner
+///
+/// # Path Parameters
+/// - `store_id`: The unique identifier of the store
+///
+/// # Returns
+/// - 200 OK: Successfully retrieved store roles
+/// - 401 Unauthorized: Invalid or missing token
+/// - 404 Not Found: Store not found
+/// - 500 Internal Server Error: Failed to fetch roles
+///
+/// # Example curl request:
+/// ```bash
+/// curl -X GET \
+///   'http://localhost:8000/api/stores/{store_id}/roles' \
+///   -H 'Authorization: Bearer {your_access_token}'
+/// ```
+///
+/// # Example success response:
+/// ```json
+/// {
+///   "data": [
+///     {
+///       "id": "role_123",
+///       "store_id": "store_123",
+///       "role_name": "Manager",
+///       "role_description": "Store manager role"
+///     }
+///   ],
+///   "message": "Store roles fetched successfully"
+/// }
+/// ```
 #[get("/<store_id>/roles")]
 pub async fn get_store_roles(store_id: String, token: RawToken) -> status::Custom<Value> {
     let token = match validate_token(token).await {
@@ -68,6 +106,42 @@ pub async fn get_store_roles(store_id: String, token: RawToken) -> status::Custo
     }
 }
 
+/// Get a specific role from a store
+///
+/// Retrieves details of a specific role in the store. The requesting user must be
+/// the store owner.
+///
+/// # Authorization
+/// Requires a valid bearer token from a store owner
+///
+/// # Path Parameters
+/// - `store_id`: The unique identifier of the store
+/// - `role_id`: The unique identifier of the role
+///
+/// # Returns
+/// - 200 OK: Successfully retrieved store role
+/// - 401 Unauthorized: Invalid or missing token
+/// - 404 Not Found: Store or role not found
+///
+/// # Example curl request:
+/// ```bash
+/// curl -X GET \
+///   'http://localhost:8000/api/stores/{store_id}/roles/{role_id}' \
+///   -H 'Authorization: Bearer {your_access_token}'
+/// ```
+///
+/// # Example success response:
+/// ```json
+/// {
+///   "data": {
+///     "id": "role_123",
+///     "store_id": "store_123",
+///     "role_name": "Manager",
+///     "role_description": "Store manager role"
+///   },
+///   "message": "Store role fetched successfully"
+/// }
+/// ```
 #[get("/<store_id>/roles/<role_id>")]
 pub async fn get_store_role(
     store_id: String,
@@ -133,6 +207,53 @@ pub async fn get_store_role(
     }
 }
 
+/// Create a new role in a store
+///
+/// Creates a new role with the specified details. The requesting user must be
+/// the store owner.
+///
+/// # Authorization
+/// Requires a valid bearer token from a store owner
+///
+/// # Path Parameters
+/// - `store_id`: The unique identifier of the store
+///
+/// # Request Body
+/// - `store_id`: The store identifier (must match path parameter)
+/// - `role_name`: Name of the role
+/// - `role_description`: Description of the role's responsibilities
+///
+/// # Returns
+/// - 201 Created: Successfully created store role
+/// - 401 Unauthorized: Invalid or missing token
+/// - 404 Not Found: Store not found
+/// - 500 Internal Server Error: Failed to create role
+///
+/// # Example curl request:
+/// ```bash
+/// curl -X POST \
+///   'http://localhost:8000/api/stores/{store_id}/roles' \
+///   -H 'Authorization: Bearer {your_access_token}' \
+///   -H 'Content-Type: application/json' \
+///   -d '{
+///     "store_id": "store_123",
+///     "role_name": "Manager",
+///     "role_description": "Store manager role"
+///   }'
+/// ```
+///
+/// # Example success response:
+/// ```json
+/// {
+///   "data": {
+///     "id": "role_123",
+///     "store_id": "store_123",
+///     "role_name": "Manager",
+///     "role_description": "Store manager role"
+///   },
+///   "message": "Store role created successfully"
+/// }
+/// ```
 #[post("/<store_id>/roles", data = "<store_role>")]
 pub async fn create_store_role(
     store_id: String,
@@ -207,6 +328,54 @@ pub async fn create_store_role(
     }
 }
 
+/// Update an existing role in a store
+///
+/// Updates the details of an existing role. The requesting user must be
+/// the store owner.
+///
+/// # Authorization
+/// Requires a valid bearer token from a store owner
+///
+/// # Path Parameters
+/// - `store_id`: The unique identifier of the store
+/// - `role_id`: The unique identifier of the role to update
+///
+/// # Request Body
+/// - `store_id`: The store identifier (must match path parameter)
+/// - `role_name`: Updated name of the role
+/// - `role_description`: Updated description of the role
+///
+/// # Returns
+/// - 200 OK: Successfully updated store role
+/// - 401 Unauthorized: Invalid or missing token
+/// - 404 Not Found: Store or role not found
+/// - 500 Internal Server Error: Failed to update role
+///
+/// # Example curl request:
+/// ```bash
+/// curl -X PUT \
+///   'http://localhost:8000/api/stores/{store_id}/roles/{role_id}' \
+///   -H 'Authorization: Bearer {your_access_token}' \
+///   -H 'Content-Type: application/json' \
+///   -d '{
+///     "store_id": "store_123",
+///     "role_name": "Senior Manager",
+///     "role_description": "Updated store manager role"
+///   }'
+/// ```
+///
+/// # Example success response:
+/// ```json
+/// {
+///   "data": {
+///     "id": "role_123",
+///     "store_id": "store_123",
+///     "role_name": "Senior Manager",
+///     "role_description": "Updated store manager role"
+///   },
+///   "message": "Store role updated successfully"
+/// }
+/// ```
 #[put("/<store_id>/roles/<role_id>", data = "<store_role>")]
 pub async fn update_store_role(
     store_id: String,
@@ -284,6 +453,37 @@ pub async fn update_store_role(
     }
 }
 
+/// Delete a role from a store
+///
+/// Removes a role from the store. The requesting user must be the store owner.
+///
+/// # Authorization
+/// Requires a valid bearer token from a store owner
+///
+/// # Path Parameters
+/// - `store_id`: The unique identifier of the store
+/// - `role_id`: The unique identifier of the role to delete
+///
+/// # Returns
+/// - 200 OK: Successfully deleted store role
+/// - 401 Unauthorized: Invalid or missing token
+/// - 404 Not Found: Store or role not found
+/// - 500 Internal Server Error: Failed to delete role
+///
+/// # Example curl request:
+/// ```bash
+/// curl -X DELETE \
+///   'http://localhost:8000/api/stores/{store_id}/roles/{role_id}' \
+///   -H 'Authorization: Bearer {your_access_token}'
+/// ```
+///
+/// # Example success response:
+/// ```json
+/// {
+///   "data": "role_123",
+///   "message": "Store role deleted successfully"
+/// }
+/// ```
 #[delete("/<store_id>/roles/<role_id>")]
 pub async fn delete_store_role(
     store_id: String,

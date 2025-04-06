@@ -75,19 +75,49 @@ pub struct AuthenticationRequest {
 
 /// Login to the system
 ///
-/// Parameters:
-/// - username: String
-/// - password: String
+/// Authenticates a user with their username and password. If the user already has an active session,
+/// it will be extended. Otherwise, a new session will be created with a 30-day expiration.
 ///
-/// Returns:
-/// if success:
-/// - status: 200
-/// - Authentication json object
-/// else:
-/// - error: AuthenticationError
+/// # Request Body
+/// ```json
+/// {
+///     "username": "string",     // The user's unique username
+///     "password": "string"      // The user's password (will be hashed)
+/// }
+/// ```
 ///
-/// Example:
-/// "curl -X POST http://localhost:8000/api/auth/ -H 'Content-Type: application/json' -d '{"username": "admin", "password": "admin"}'"
+/// # Returns
+/// - Success (200 OK):
+///   ```json
+///   {
+///     "error": null,
+///     "message": null,
+///     "data": {
+///       "id": "uuid",           // The authentication session ID
+///       "user_id": "uuid",      // The authenticated user's ID
+///       "token": "string",      // Bearer token to use for authenticated requests
+///       "created_at": "datetime", // When the session was created
+///       "expires_at": "datetime"  // When the session will expire (30 days from now)
+///     }
+///   }
+///   ```
+/// - Error (404 Not Found):
+///   - When username/password combination is invalid
+///   - When user account doesn't exist
+/// - Error (500 Internal Server Error):
+///   - When session creation fails
+///   - When session update fails
+///
+/// # Example
+/// ```bash
+/// # Basic login
+/// curl -X POST 'http://localhost:8000/api/auth/' \
+///   -H 'Content-Type: application/json' \
+///   -d '{
+///     "username": "johndoe",
+///     "password": "secretpass123"
+///   }'
+/// ```
 #[post("/", data = "<authentication_request>")]
 pub async fn login(authentication_request: Json<AuthenticationRequest>) -> status::Custom<Value> {
     let hashed_password = format!(
@@ -190,17 +220,38 @@ pub async fn login(authentication_request: Json<AuthenticationRequest>) -> statu
 
 /// Logout from the system
 ///
-/// Parameters:
-/// - token: String (obtained from authentication)
+/// Invalidates the current user session by deleting their authentication token.
+/// After logout, the token can no longer be used for authenticated requests.
 ///
-/// Returns:
-/// if success:
-/// - status: 200
-/// else:
-/// - error: AuthenticationError
+/// # Headers Required
+/// - Authorization: Bearer <token>
+///   - The token must be a valid authentication token obtained from login
+///   - The token must not be expired
+///   - The token must be prefixed with "Bearer "
 ///
-/// Example:
-/// "curl -X DELETE http://localhost:8000/api/auth/ -H 'Content-Type: application/json' -H 'Authorization: Bearer <token>'"
+/// # Returns
+/// - Success (200 OK):
+///   ```json
+///   {
+///     "error": null,
+///     "message": "Logged out successfully",
+///     "data": null
+///   }
+///   ```
+/// - Error (400 Bad Request):
+///   - When the token is missing
+///   - When the token format is invalid
+///   - When the token has already been invalidated
+///   - When the session is not found
+///
+/// # Example
+/// ```bash
+/// # Logout with a valid token
+/// curl -X DELETE 'http://localhost:8000/api/auth/' \
+///   -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIs...'
+///
+/// # Note: Replace the token with your actual authentication token
+/// ```
 #[delete("/")]
 pub async fn logout(token: RawToken) -> status::Custom<Value> {
     let token_value = match validate_token(token).await {
@@ -256,19 +307,65 @@ pub struct RegisterResponse {
 
 /// Register a new user
 ///
-/// Parameters:
-/// - username: String
-/// - password: String
+/// Creates a new user account and generates backup codes for account recovery.
+/// The backup codes should be stored securely by the user as they can be used
+/// to recover account access if the password is lost.
 ///
-/// Returns:
-/// if success:
-/// - status: 200
-/// - User json object
-/// else:
-/// - error: AuthenticationError
+/// # Request Body
+/// ```json
+/// {
+///     "username": "string",     // Unique username for the account
+///     "password": "string",     // Password (will be hashed before storage)
+///     "firstName": "string",    // User's first name
+///     "lastName": "string"      // User's last name
+/// }
+/// ```
 ///
-/// Example:
-/// "curl -X POST http://localhost:8000/api/auth/register -H 'Content-Type: application/json' -d '{"username": "admin", "password": "admin"}'"
+/// # Returns
+/// - Success (200 OK):
+///   ```json
+///   {
+///     "error": null,
+///     "message": "User created successfully",
+///     "data": {
+///       "user": {
+///         "id": "uuid",           // Unique identifier for the user
+///         "username": "string",   // The registered username
+///         "firstName": "string",  // User's first name
+///         "lastName": "string",   // User's last name
+///         "createdAt": "datetime" // When the account was created
+///       },
+///       "backupCodes": [         // One-time use backup codes for account recovery
+///         "string",              // Store these securely
+///         "string",
+///         ...
+///       ]
+///     }
+///   }
+///   ```
+/// - Error (400 Bad Request):
+///   - When username is already taken
+///   - When required fields are missing
+///   - When user creation fails
+///   - When backup code generation fails
+///
+/// # Security Notes
+/// - Passwords are hashed using SHA-256 before storage
+/// - Backup codes are generated randomly and should be stored securely
+/// - Each backup code can only be used once for account recovery
+///
+/// # Example
+/// ```bash
+/// # Register a new user
+/// curl -X POST 'http://localhost:8000/api/auth/register' \
+///   -H 'Content-Type: application/json' \
+///   -d '{
+///     "username": "johndoe",
+///     "password": "secretpass123",
+///     "firstName": "John",
+///     "lastName": "Doe"
+///   }'
+/// ```
 #[post("/register", data = "<register_request>")]
 pub async fn register(register_request: Json<RegisterRequest>) -> status::Custom<Value> {
     let hashed_password = format!("{:x}", Sha256::digest(register_request.password.as_bytes()));

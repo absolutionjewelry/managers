@@ -14,15 +14,41 @@ use rocket::serde::json::{Json, Value};
 
 /// Get all users of a store
 ///
+/// Retrieves all users associated with a specific store. Only the store owner can access this endpoint.
+/// This endpoint is useful for managing store permissions and viewing all users who have access to the store.
+///
+/// Required headers:
+/// - Authorization: Bearer token
+///
+/// Path parameters:
+/// - store_id: The ID of the store
+///
+/// Response body:
+/// ```json
+/// {
+///   "data": [
+///     {
+///       "id": "789",
+///       "user_id": "456",
+///       "store_id": "123"
+///     },
+///     // ... more users
+///   ],
+///   "message": "Store users fetched successfully"
+/// }
+/// ```
+///
 /// Returns:
-/// if success:
-/// - status: 200
-/// - StoreUsers json array
-/// else:
-/// - error: StoreError, StoreUserError, or AuthenticationError
+/// - 200 OK: List of store users
+/// - 401 Unauthorized: Invalid or missing token
+/// - 404 Not Found: Store not found
+/// - 500 Internal Server Error: Failed to fetch store users
 ///
 /// Example:
-/// "curl -X GET http://localhost:8000/api/stores/1/users -H 'Authorization: Bearer <token>'"
+/// ```bash
+/// curl -X GET 'http://localhost:8000/api/stores/123/users' \
+///   -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...'
+/// ```
 #[get("/<store_id>/users")]
 pub async fn get_store_users(store_id: String, token: RawToken) -> status::Custom<Value> {
     let token = match validate_token(token).await {
@@ -79,17 +105,27 @@ pub async fn get_store_users(store_id: String, token: RawToken) -> status::Custo
     }
 }
 
-/// Get a user of a store
+/// Get a specific user of a store
+///
+/// Retrieves details of a specific user in a store. Only the store owner can access this endpoint.
+///
+/// Required headers:
+/// - Authorization: Bearer token
+///
+/// Path parameters:
+/// - store_id: The ID of the store
+/// - user_id: The ID of the user to retrieve
 ///
 /// Returns:
-/// if success:
-/// - status: 200
-/// - StoreUser json object
-/// else:
-/// - error: StoreError, StoreUserError, or AuthenticationError
+/// - 200 OK: Store user details
+/// - 401 Unauthorized: Invalid or missing token
+/// - 404 Not Found: Store or user not found
 ///
 /// Example:
-/// "curl -X GET http://localhost:8000/api/stores/1/users/1 -H 'Authorization: Bearer <token>'"
+/// ```bash
+/// curl -X GET 'http://localhost:8000/api/stores/123/users/456' \
+///   -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...'
+/// ```
 #[get("/<store_id>/users/<user_id>")]
 pub async fn get_store_user(
     store_id: String,
@@ -153,20 +189,53 @@ pub async fn get_store_user(
     }
 }
 
-/// Create a user of a store
+/// Create a new store user
 ///
-/// Parameters:
-/// - store_user: StoreUser json object
+/// Adds a new user to a store. Only the store owner can access this endpoint.
+/// This endpoint allows store owners to grant access to their store for other users.
+/// The user must exist in the system before they can be added to a store.
+///
+/// Required headers:
+/// - Authorization: Bearer token
+/// - Content-Type: application/json
+///
+/// Path parameters:
+/// - store_id: The ID of the store
+///
+/// Request body:
+/// ```json
+/// {
+///   "user_id": "456",
+///   "store_id": "123"
+/// }
+/// ```
+///
+/// Response body:
+/// ```json
+/// {
+///   "data": {
+///     "id": "789",
+///     "user_id": "456",
+///     "store_id": "123"
+///   },
+///   "message": "Store user created successfully"
+/// }
+/// ```
 ///
 /// Returns:
-/// if success:
-/// - status: 200
-/// - StoreUser json object
-/// else:
-/// - error: StoreError, StoreUserError, or AuthenticationError
+/// - 201 Created: Store user created successfully
+/// - 401 Unauthorized: Invalid or missing token
+/// - 404 Not Found: Store not found or user not found
+/// - 409 Conflict: User already exists in store
+/// - 500 Internal Server Error: Failed to create store user
 ///
 /// Example:
-/// "curl -X POST http://localhost:8000/api/stores/1/users/1 -H 'Authorization: Bearer <token>' -H 'Content-Type: application/json'"
+/// ```bash
+/// curl -X POST 'http://localhost:8000/api/stores/123/users' \
+///   -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...' \
+///   -H 'Content-Type: application/json' \
+///   -d '{"user_id": "456", "store_id": "123"}'
+/// ```
 #[post("/<store_id>/users", data = "<store_user>")]
 pub async fn create_store_user(
     store_id: String,
@@ -238,6 +307,40 @@ pub async fn create_store_user(
     }
 }
 
+/// Update a store user
+///
+/// Updates details of a specific user in a store. Only the store owner can access this endpoint.
+///
+/// Required headers:
+/// - Authorization: Bearer token
+/// - Content-Type: application/json
+///
+/// Path parameters:
+/// - store_id: The ID of the store
+/// - user_id: The ID of the user to update
+///
+/// Request body:
+/// ```json
+/// {
+///   "id": "789",
+///   "user_id": "456",
+///   "store_id": "123"
+/// }
+/// ```
+///
+/// Returns:
+/// - 200 OK: Store user updated successfully
+/// - 401 Unauthorized: Invalid or missing token
+/// - 404 Not Found: Store or user not found
+/// - 500 Internal Server Error: Failed to update store user
+///
+/// Example:
+/// ```bash
+/// curl -X PUT 'http://localhost:8000/api/stores/123/users/456' \
+///   -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...' \
+///   -H 'Content-Type: application/json' \
+///   -d '{"id": "789", "user_id": "456", "store_id": "123"}'
+/// ```
 #[put("/<store_id>/users/<user_id>", data = "<store_user>")]
 pub async fn update_store_user(
     store_id: String,
@@ -327,8 +430,27 @@ pub async fn update_store_user(
     }
 }
 
-/// Delete a user of a store
+/// Delete a store user
 ///
+/// Removes a user from a store. Only the store owner can access this endpoint.
+///
+/// Required headers:
+/// - Authorization: Bearer token
+///
+/// Path parameters:
+/// - store_id: The ID of the store
+/// - user_id: The ID of the user to delete
+///
+/// Returns:
+/// - 200 OK: Store user deleted successfully
+/// - 401 Unauthorized: Invalid or missing token
+/// - 500 Internal Server Error: Failed to delete store user
+///
+/// Example:
+/// ```bash
+/// curl -X DELETE 'http://localhost:8000/api/stores/123/users/456' \
+///   -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...'
+/// ```
 #[delete("/<store_id>/users/<user_id>")]
 pub async fn delete_store_user(
     store_id: String,

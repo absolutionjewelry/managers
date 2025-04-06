@@ -12,6 +12,65 @@ use rocket::http::Status;
 use rocket::response::status;
 use rocket::serde::json::{Json, Value};
 use serde::{Deserialize, Serialize};
+
+/// # Store Management API Endpoints
+///
+/// These endpoints handle CRUD operations for stores. All endpoints require authentication
+/// via a bearer token in the Authorization header.
+///
+/// ## Authentication
+/// All endpoints require a valid JWT token passed in the Authorization header:
+/// ```text
+/// Authorization: Bearer <your_jwt_token>
+/// ```
+///
+/// ## Common Response Format
+/// All endpoints return JSON responses in the following format:
+/// ```json
+/// {
+///   "success": boolean,
+///   "data": object | null,
+///   "message": string | null,
+///   "error": string | null
+/// }
+/// ```
+
+/// Get all stores for the authenticated user
+///
+/// Returns a list of all stores (both archived and unarchived) owned by the authenticated user.
+///
+/// # Authorization
+/// Requires a valid JWT token for a registered user
+///
+/// # Returns
+/// - `200 OK` - List of stores successfully retrieved
+/// - `401 Unauthorized` - Invalid or missing authentication token
+/// - `404 Not Found` - No stores found for the user
+///
+/// # Example curl request:
+/// ```bash
+/// curl -X GET 'http://localhost:8000/api/stores' \
+///   -H 'Authorization: Bearer your_token_here'
+/// ```
+///
+/// # Example success response:
+/// ```json
+/// {
+///   "success": true,
+///   "data": [
+///     {
+///       "id": "store_id",
+///       "storeName": "My Store",
+///       "storeDescription": "Description",
+///       "ownerId": "user_id",
+///       "archived": false,
+///       "createdAt": "2024-03-20T10:00:00Z",
+///       "updatedAt": "2024-03-20T10:00:00Z"
+///     }
+///   ],
+///   "message": "Stores fetched successfully"
+/// }
+/// ```
 #[get("/")]
 pub async fn get_stores(token: RawToken) -> status::Custom<Value> {
     let token = match validate_token(token).await {
@@ -50,6 +109,23 @@ pub async fn get_stores(token: RawToken) -> status::Custom<Value> {
     }
 }
 
+/// Get only unarchived stores for the authenticated user
+///
+/// Returns a list of active (unarchived) stores owned by the authenticated user.
+///
+/// # Authorization
+/// Requires a valid JWT token for a registered user
+///
+/// # Returns
+/// - `200 OK` - List of unarchived stores successfully retrieved
+/// - `401 Unauthorized` - Invalid or missing authentication token
+/// - `404 Not Found` - No unarchived stores found
+///
+/// # Example curl request:
+/// ```bash
+/// curl -X GET 'http://localhost:8000/api/stores/unarchived' \
+///   -H 'Authorization: Bearer your_token_here'
+/// ```
 #[get("/unarchived", rank = 2)]
 pub async fn get_unarchived_stores(token: RawToken) -> status::Custom<Value> {
     let token = match validate_token(token).await {
@@ -88,6 +164,15 @@ pub async fn get_unarchived_stores(token: RawToken) -> status::Custom<Value> {
     }
 }
 
+/// Get archived stores for the authenticated user
+///
+/// Returns a list of archived stores owned by the authenticated user.
+///
+/// # Example curl request:
+/// ```bash
+/// curl -X GET 'http://localhost:8000/api/stores/archived' \
+///   -H 'Authorization: Bearer your_token_here'
+/// ```
 #[get("/archived", rank = 1)]
 pub async fn get_archived_stores(token: RawToken) -> status::Custom<Value> {
     let token = match validate_token(token).await {
@@ -126,6 +211,15 @@ pub async fn get_archived_stores(token: RawToken) -> status::Custom<Value> {
     }
 }
 
+/// Get a specific store by ID
+///
+/// Returns details for a single store if it belongs to the authenticated user.
+///
+/// # Example curl request:
+/// ```bash
+/// curl -X GET 'http://localhost:8000/api/stores/store_id_here' \
+///   -H 'Authorization: Bearer your_token_here'
+/// ```
 #[get("/<store_id>", rank = 3)]
 pub async fn get_store(store_id: String, token: RawToken) -> status::Custom<Value> {
     let token = match validate_token(token).await {
@@ -167,6 +261,15 @@ pub async fn get_store(store_id: String, token: RawToken) -> status::Custom<Valu
     }
 }
 
+/// Data structure for creating a new store
+///
+/// # Fields
+/// * `store_name` - Name of the store (required)
+///   - Must not be empty
+///   - Maximum length: 100 characters
+/// * `store_description` - Optional description of the store
+///   - Maximum length: 500 characters
+///   - Can be null or omitted
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateStore {
@@ -174,6 +277,48 @@ pub struct CreateStore {
     pub store_description: Option<String>,
 }
 
+/// Create a new store
+///
+/// Creates a new store owned by the authenticated user.
+///
+/// # Authorization
+/// Requires a valid JWT token for a registered user
+///
+/// # Request Body
+/// ```json
+/// {
+///   "storeName": "My Store",
+///   "storeDescription": "My awesome store description"  // optional
+/// }
+/// ```
+///
+/// # Returns
+/// - `200 OK` - Store successfully created
+/// - `401 Unauthorized` - Invalid or missing authentication token
+/// - `500 Internal Server Error` - Failed to create store
+///
+/// # Example curl request:
+/// ```bash
+/// curl -X POST 'http://localhost:8000/api/stores' \
+///   -H 'Authorization: Bearer your_token_here' \
+///   -H 'Content-Type: application/json' \
+///   -d '{
+///     "storeName": "My Store",
+///     "storeDescription": "My awesome store description"
+///   }'
+/// ```
+///
+/// # Example success response:
+/// ```json
+/// {
+///   "success": true,
+///   "data": {
+///     "storeName": "My Store",
+///     "storeDescription": "My awesome store description"
+///   },
+///   "message": "Store created successfully"
+/// }
+/// ```
 #[post("/", data = "<store>")]
 pub async fn create_store(store: Json<CreateStore>, token: RawToken) -> status::Custom<Value> {
     let token = match validate_token(token).await {
@@ -222,6 +367,15 @@ pub async fn create_store(store: Json<CreateStore>, token: RawToken) -> status::
     }
 }
 
+/// Data structure for updating an existing store
+///
+/// # Fields
+/// * `store_name` - Updated name of the store (required)
+///   - Must not be empty
+///   - Maximum length: 100 characters
+/// * `store_description` - Optional updated description of the store
+///   - Maximum length: 500 characters
+///   - Can be null to remove existing description
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateStore {
@@ -229,6 +383,40 @@ pub struct UpdateStore {
     pub store_description: Option<String>,
 }
 
+/// Update an existing store
+///
+/// Updates the details of an existing store if it belongs to the authenticated user.
+///
+/// # Authorization
+/// Requires a valid JWT token for a registered user
+///
+/// # URL Parameters
+/// * `store_id` - The unique identifier of the store to update
+///
+/// # Request Body
+/// ```json
+/// {
+///   "storeName": "Updated Store Name",
+///   "storeDescription": "Updated store description"  // optional
+/// }
+/// ```
+///
+/// # Returns
+/// - `200 OK` - Store successfully updated
+/// - `401 Unauthorized` - Invalid or missing authentication token
+/// - `404 Not Found` - Store not found or doesn't belong to user
+/// - `500 Internal Server Error` - Failed to update store
+///
+/// # Example curl request:
+/// ```bash
+/// curl -X PUT 'http://localhost:8000/api/stores/store_id_here' \
+///   -H 'Authorization: Bearer your_token_here' \
+///   -H 'Content-Type: application/json' \
+///   -d '{
+///     "storeName": "Updated Store Name",
+///     "storeDescription": "Updated store description"
+///   }'
+/// ```
 #[put("/<store_id>", data = "<store>")]
 pub async fn update_store(
     store_id: String,
@@ -282,6 +470,37 @@ pub async fn update_store(
     }
 }
 
+/// Delete a store
+///
+/// Permanently deletes a store if it belongs to the authenticated user.
+/// This action cannot be undone.
+///
+/// # Authorization
+/// Requires a valid JWT token for a registered user
+///
+/// # URL Parameters
+/// * `store_id` - The unique identifier of the store to delete
+///
+/// # Returns
+/// - `200 OK` - Store successfully deleted
+/// - `401 Unauthorized` - Invalid or missing authentication token
+/// - `404 Not Found` - Store not found or doesn't belong to user
+/// - `500 Internal Server Error` - Failed to delete store
+///
+/// # Example curl request:
+/// ```bash
+/// curl -X DELETE 'http://localhost:8000/api/stores/store_id_here' \
+///   -H 'Authorization: Bearer your_token_here'
+/// ```
+///
+/// # Example success response:
+/// ```json
+/// {
+///   "success": true,
+///   "data": "store_id_here",
+///   "message": "Store deleted successfully"
+/// }
+/// ```
 #[delete("/<store_id>")]
 pub async fn delete_store(store_id: &str, token: RawToken) -> status::Custom<Value> {
     let token = match validate_token(token).await {

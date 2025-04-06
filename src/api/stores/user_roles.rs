@@ -12,6 +12,46 @@ use rocket::http::Status;
 use rocket::response::status;
 use rocket::serde::json::{Json, Value};
 
+/// Get all roles assigned to a specific user in a store
+///
+/// Retrieves a list of all roles that have been assigned to the specified user
+/// within the given store context.
+///
+/// # Permissions Required
+/// - Store Admin or
+/// - Store Manager
+///
+/// # URL Parameters
+/// - store_id: The unique identifier of the store
+/// - user_id: The unique identifier of the user
+///
+/// # Example curl request:
+/// ```bash
+/// curl -X GET \
+///   'http://localhost:8000/api/stores/{store_id}/users/{user_id}/roles' \
+///   -H 'Authorization: Bearer your_access_token'
+/// ```
+///
+/// # Success Response (200 OK):
+/// ```json
+/// {
+///   "success": true,
+///   "data": [
+///     {
+///       "id": "role_id",
+///       "store_id": "store_id",
+///       "name": "Manager",
+///       "permissions": ["read", "write"]
+///     }
+///   ],
+///   "message": "Store user roles fetched successfully"
+/// }
+/// ```
+///
+/// # Error Responses
+/// - 401 Unauthorized: Invalid or missing authentication token
+/// - 403 Forbidden: Insufficient permissions
+/// - 500 Internal Server Error: Failed to fetch roles
 #[get("/<store_id>/users/<user_id>/roles")]
 pub async fn get_store_user_roles(
     store_id: String,
@@ -61,6 +101,59 @@ pub async fn get_store_user_roles(
     }
 }
 
+/// Assign a role to a user in a store
+///
+/// Creates a new role assignment linking a specific role to a user within
+/// the context of a store. The role must already exist in the store.
+///
+/// # Permissions Required
+/// - Store Admin
+///
+/// # URL Parameters
+/// - store_id: The unique identifier of the store
+/// - user_id: The unique identifier of the user
+///
+/// # Request Body
+/// ```json
+/// {
+///   "id": "role_id",      // The ID of the existing role to assign
+///   "store_id": "store_id" // Must match the store_id in the URL
+/// }
+/// ```
+///
+/// # Example curl request:
+/// ```bash
+/// curl -X POST \
+///   'http://localhost:8000/api/stores/{store_id}/users/{user_id}/roles' \
+///   -H 'Authorization: Bearer your_access_token' \
+///   -H 'Content-Type: application/json' \
+///   -d '{
+///     "id": "role_id",
+///     "store_id": "store_id"
+///   }'
+/// ```
+///
+/// # Success Response (201 Created):
+/// ```json
+/// {
+///   "success": true,
+///   "data": {
+///     "id": "role_id",
+///     "store_id": "store_id",
+///     "name": "Manager",
+///     "permissions": ["read", "write"]
+///   },
+///   "message": "Store user role created successfully"
+/// }
+/// ```
+///
+/// # Error Responses
+/// - 400 Bad Request: Invalid request body
+/// - 401 Unauthorized: Invalid or missing authentication token
+/// - 403 Forbidden: Insufficient permissions
+/// - 404 Not Found: Role not found
+/// - 409 Conflict: Role already assigned to user
+/// - 500 Internal Server Error: Failed to create role assignment
 #[post("/<store_id>/users/<user_id>/roles", data = "<store_role>")]
 pub async fn create_store_user_role(
     store_id: String,
@@ -123,6 +216,40 @@ pub async fn create_store_user_role(
     }
 }
 
+/// Remove a role assignment from a user in a store
+///
+/// Deletes the association between a role and a user within the context
+/// of a specific store.
+///
+/// # Permissions Required
+/// - Store Admin
+///
+/// # URL Parameters
+/// - store_id: The unique identifier of the store
+/// - user_id: The unique identifier of the user
+/// - role_id: The unique identifier of the role to remove
+///
+/// # Example curl request:
+/// ```bash
+/// curl -X DELETE \
+///   'http://localhost:8000/api/stores/{store_id}/users/{user_id}/roles/{role_id}' \
+///   -H 'Authorization: Bearer your_access_token'
+/// ```
+///
+/// # Success Response (200 OK):
+/// ```json
+/// {
+///   "success": true,
+///   "data": "role_id",
+///   "message": "Store user role deleted successfully"
+/// }
+/// ```
+///
+/// # Error Responses
+/// - 401 Unauthorized: Invalid or missing authentication token
+/// - 403 Forbidden: Insufficient permissions
+/// - 404 Not Found: Role assignment not found
+/// - 500 Internal Server Error: Failed to delete role assignment
 #[delete("/<store_id>/users/<user_id>/roles/<role_id>")]
 pub async fn delete_store_user_role(
     store_id: String,
