@@ -12,6 +12,7 @@ pub enum StoreError {
     StoreCreationFailed,
     StoreUpdateFailed,
     StoreDeletionFailed,
+    StoreNameAlreadyExists,
 }
 
 impl std::fmt::Display for StoreError {
@@ -21,6 +22,7 @@ impl std::fmt::Display for StoreError {
             StoreError::StoreCreationFailed => write!(f, "Store creation failed"),
             StoreError::StoreUpdateFailed => write!(f, "Store update failed"),
             StoreError::StoreDeletionFailed => write!(f, "Store deletion failed"),
+            StoreError::StoreNameAlreadyExists => write!(f, "Store name already exists"),
         }
     }
 }

@@ -370,6 +370,19 @@ pub async fn create_store(store: Json<CreateStore>, token: RawToken) -> status::
         ),
         Err(err) => {
             println!("Error creating store: {:?}", err);
+            if err
+                .to_string()
+                .contains("duplicate key value violates unique constraint")
+            {
+                return status::Custom(
+                    Status::BadRequest,
+                    serde_json::to_value(&Response::error(
+                        anyhow::anyhow!(StoreError::StoreNameAlreadyExists),
+                        StoreError::StoreNameAlreadyExists.to_string(),
+                    ))
+                    .unwrap(),
+                );
+            }
             status::Custom(
                 Status::InternalServerError,
                 serde_json::to_value(&Response::error(
@@ -476,6 +489,19 @@ pub async fn update_store(
         ),
         Err(err) => {
             println!("Error updating store: {:?}", err);
+            if err
+                .to_string()
+                .contains("duplicate key value violates unique constraint")
+            {
+                return status::Custom(
+                    Status::BadRequest,
+                    serde_json::to_value(&Response::error(
+                        anyhow::anyhow!(StoreError::StoreNameAlreadyExists),
+                        StoreError::StoreNameAlreadyExists.to_string(),
+                    ))
+                    .unwrap(),
+                );
+            }
             status::Custom(
                 Status::InternalServerError,
                 serde_json::to_value(&Response::error(
