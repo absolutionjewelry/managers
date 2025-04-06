@@ -5,8 +5,8 @@ use crate::models::authentication::AuthenticationError;
 use crate::models::store::{Store, StoreError};
 use crate::{
     delete_resource_where_fields, find_all_archived_resources_where_fields,
-    find_all_resources_where_fields, find_all_unarchived_resources_where_fields,
-    find_one_resource_where_fields, insert_resource, update_resource,
+    find_all_unarchived_resources_where_fields, find_one_resource_where_fields, insert_resource,
+    update_resource,
 };
 use rocket::http::Status;
 use rocket::response::status;
@@ -89,7 +89,7 @@ pub async fn get_stores(token: RawToken) -> status::Custom<Value> {
 
     let user_id = token.user_id;
     let params = vec![("owner_id", DatabaseValue::String(user_id))];
-    match find_all_resources_where_fields!(Store, params).await {
+    match find_all_unarchived_resources_where_fields!(Store, params).await {
         Ok(stores) => status::Custom(
             Status::Ok,
             serde_json::to_value(&Response::success(
@@ -98,14 +98,17 @@ pub async fn get_stores(token: RawToken) -> status::Custom<Value> {
             ))
             .unwrap(),
         ),
-        Err(_) => status::Custom(
-            Status::NotFound,
-            serde_json::to_value(&Response::error(
-                anyhow::anyhow!(StoreError::StoreNotFound),
-                StoreError::StoreNotFound.to_string(),
-            ))
-            .unwrap(),
-        ),
+        Err(err) => {
+            println!("Error fetching stores: {:?}", err);
+            status::Custom(
+                Status::NotFound,
+                serde_json::to_value(&Response::error(
+                    anyhow::anyhow!(StoreError::StoreNotFound),
+                    StoreError::StoreNotFound.to_string(),
+                ))
+                .unwrap(),
+            )
+        }
     }
 }
 
@@ -153,14 +156,17 @@ pub async fn get_unarchived_stores(token: RawToken) -> status::Custom<Value> {
             ))
             .unwrap(),
         ),
-        Err(_) => status::Custom(
-            Status::NotFound,
-            serde_json::to_value(&Response::error(
-                anyhow::anyhow!(StoreError::StoreNotFound),
-                StoreError::StoreNotFound.to_string(),
-            ))
-            .unwrap(),
-        ),
+        Err(err) => {
+            println!("Error fetching unarchived stores: {:?}", err);
+            status::Custom(
+                Status::NotFound,
+                serde_json::to_value(&Response::error(
+                    anyhow::anyhow!(StoreError::StoreNotFound),
+                    StoreError::StoreNotFound.to_string(),
+                ))
+                .unwrap(),
+            )
+        }
     }
 }
 
@@ -200,14 +206,17 @@ pub async fn get_archived_stores(token: RawToken) -> status::Custom<Value> {
             ))
             .unwrap(),
         ),
-        Err(_) => status::Custom(
-            Status::NotFound,
-            serde_json::to_value(&Response::error(
-                anyhow::anyhow!(StoreError::StoreNotFound),
-                StoreError::StoreNotFound.to_string(),
-            ))
-            .unwrap(),
-        ),
+        Err(err) => {
+            println!("Error fetching archived stores: {:?}", err);
+            status::Custom(
+                Status::NotFound,
+                serde_json::to_value(&Response::error(
+                    anyhow::anyhow!(StoreError::StoreNotFound),
+                    StoreError::StoreNotFound.to_string(),
+                ))
+                .unwrap(),
+            )
+        }
     }
 }
 
@@ -250,14 +259,17 @@ pub async fn get_store(store_id: String, token: RawToken) -> status::Custom<Valu
             ))
             .unwrap(),
         ),
-        Err(_) => status::Custom(
-            Status::NotFound,
-            serde_json::to_value(&Response::error(
-                anyhow::anyhow!(StoreError::StoreNotFound),
-                StoreError::StoreNotFound.to_string(),
-            ))
-            .unwrap(),
-        ),
+        Err(err) => {
+            println!("Error fetching store: {:?}", err);
+            status::Custom(
+                Status::NotFound,
+                serde_json::to_value(&Response::error(
+                    anyhow::anyhow!(StoreError::StoreNotFound),
+                    StoreError::StoreNotFound.to_string(),
+                ))
+                .unwrap(),
+            )
+        }
     }
 }
 
@@ -356,14 +368,17 @@ pub async fn create_store(store: Json<CreateStore>, token: RawToken) -> status::
             ))
             .unwrap(),
         ),
-        Err(_) => status::Custom(
-            Status::InternalServerError,
-            serde_json::to_value(&Response::error(
-                anyhow::anyhow!(StoreError::StoreCreationFailed),
-                StoreError::StoreCreationFailed.to_string(),
-            ))
-            .unwrap(),
-        ),
+        Err(err) => {
+            println!("Error creating store: {:?}", err);
+            status::Custom(
+                Status::InternalServerError,
+                serde_json::to_value(&Response::error(
+                    anyhow::anyhow!(StoreError::StoreCreationFailed),
+                    StoreError::StoreCreationFailed.to_string(),
+                ))
+                .unwrap(),
+            )
+        }
     }
 }
 
@@ -459,14 +474,17 @@ pub async fn update_store(
             ))
             .unwrap(),
         ),
-        Err(_) => status::Custom(
-            Status::InternalServerError,
-            serde_json::to_value(&Response::error(
-                anyhow::anyhow!(StoreError::StoreUpdateFailed),
-                StoreError::StoreUpdateFailed.to_string(),
-            ))
-            .unwrap(),
-        ),
+        Err(err) => {
+            println!("Error updating store: {:?}", err);
+            status::Custom(
+                Status::InternalServerError,
+                serde_json::to_value(&Response::error(
+                    anyhow::anyhow!(StoreError::StoreUpdateFailed),
+                    StoreError::StoreUpdateFailed.to_string(),
+                ))
+                .unwrap(),
+            )
+        }
     }
 }
 
@@ -545,13 +563,16 @@ pub async fn delete_store(store_id: &str, token: RawToken) -> status::Custom<Val
             ))
             .unwrap(),
         ),
-        Err(_) => status::Custom(
-            Status::InternalServerError,
-            serde_json::to_value(&Response::error(
-                anyhow::anyhow!(StoreError::StoreDeletionFailed),
-                StoreError::StoreDeletionFailed.to_string(),
-            ))
-            .unwrap(),
-        ),
+        Err(err) => {
+            println!("Error deleting store: {:?}", err);
+            status::Custom(
+                Status::InternalServerError,
+                serde_json::to_value(&Response::error(
+                    anyhow::anyhow!(StoreError::StoreDeletionFailed),
+                    StoreError::StoreDeletionFailed.to_string(),
+                ))
+                .unwrap(),
+            )
+        }
     }
 }
