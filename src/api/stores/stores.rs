@@ -223,10 +223,17 @@ pub async fn create_store(store: Json<CreateStore>, token: RawToken) -> status::
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateStore {
+    pub store_name: String,
+    pub store_description: Option<String>,
+}
+
 #[put("/<store_id>", data = "<store>")]
 pub async fn update_store(
     store_id: String,
-    store: Json<Store>,
+    store: Json<UpdateStore>,
     token: RawToken,
 ) -> status::Custom<Value> {
     let token = match VerifiedToken::from_raw(token).await {
@@ -251,7 +258,7 @@ pub async fn update_store(
         ),
         (
             "store_description",
-            DatabaseValue::String(store.store_description.clone()),
+            DatabaseValue::String(store.store_description.clone().unwrap_or_default()),
         ),
         ("owner_id", DatabaseValue::String(user_id)),
     ];
