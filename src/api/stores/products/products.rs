@@ -1,6 +1,5 @@
 use crate::api::response::Response;
-use crate::api::token::RawToken;
-use crate::api::token::VerifiedToken;
+use crate::api::token::{validate_token, RawToken};
 use crate::database::values::DatabaseValue;
 use crate::models::authentication::AuthenticationError;
 use crate::models::product::Product;
@@ -17,7 +16,7 @@ use rocket::serde::json::{Json, Value};
 
 #[get("/<store_id>/products")]
 pub async fn get_products(store_id: String, token: RawToken) -> status::Custom<Value> {
-    let token = match VerifiedToken::from_raw(token).await {
+    let token = match validate_token(token).await {
         Ok(token) => token,
         Err(_) => {
             return status::Custom(
@@ -74,7 +73,7 @@ pub async fn get_products(store_id: String, token: RawToken) -> status::Custom<V
 
 #[get("/<store_id>/products/unarchived", rank = 2)]
 pub async fn get_unarchived_products(store_id: String, token: RawToken) -> status::Custom<Value> {
-    let token = match VerifiedToken::from_raw(token).await {
+    let token = match validate_token(token).await {
         Ok(token) => token,
         Err(_) => {
             return status::Custom(
@@ -131,7 +130,7 @@ pub async fn get_unarchived_products(store_id: String, token: RawToken) -> statu
 
 #[get("/<store_id>/products/archived", rank = 1)]
 pub async fn get_archived_products(store_id: String, token: RawToken) -> status::Custom<Value> {
-    let token = match VerifiedToken::from_raw(token).await {
+    let token = match validate_token(token).await {
         Ok(token) => token,
         Err(_) => {
             return status::Custom(
@@ -192,7 +191,7 @@ pub async fn get_product(
     product_id: String,
     token: RawToken,
 ) -> status::Custom<Value> {
-    let token = match VerifiedToken::from_raw(token).await {
+    let token = match validate_token(token).await {
         Ok(token) => token,
         Err(_) => {
             return status::Custom(
@@ -239,7 +238,7 @@ pub async fn create_product(
     product: Json<Product>,
     token: RawToken,
 ) -> status::Custom<Value> {
-    let token = match VerifiedToken::from_raw(token).await {
+    let token = match validate_token(token).await {
         Ok(token) => token,
         Err(_) => {
             return status::Custom(
@@ -327,7 +326,7 @@ pub async fn update_product(
     product: Json<Product>,
     token: RawToken,
 ) -> status::Custom<Value> {
-    let token = match VerifiedToken::from_raw(token).await {
+    let token = match validate_token(token).await {
         Ok(token) => token,
         Err(_) => {
             return status::Custom(
@@ -411,7 +410,7 @@ pub async fn delete_product(
     product_id: String,
     token: RawToken,
 ) -> status::Custom<Value> {
-    let token = match VerifiedToken::from_raw(token).await {
+    let token = match validate_token(token).await {
         Ok(token) => token,
         Err(_) => {
             return status::Custom(

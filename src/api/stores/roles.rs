@@ -1,6 +1,5 @@
 use crate::api::response::Response;
-use crate::api::token::RawToken;
-use crate::api::token::VerifiedToken;
+use crate::api::token::{validate_token, RawToken};
 use crate::database::values::DatabaseValue;
 use crate::models::authentication::AuthenticationError;
 use crate::models::store::{Store, StoreError};
@@ -15,7 +14,7 @@ use rocket::serde::json::{Json, Value};
 
 #[get("/<store_id>/roles")]
 pub async fn get_store_roles(store_id: String, token: RawToken) -> status::Custom<Value> {
-    let token = match VerifiedToken::from_raw(token).await {
+    let token = match validate_token(token).await {
         Ok(token) => token,
         Err(_) => {
             return status::Custom(
@@ -75,7 +74,7 @@ pub async fn get_store_role(
     role_id: String,
     token: RawToken,
 ) -> status::Custom<Value> {
-    let token = match VerifiedToken::from_raw(token).await {
+    let token = match validate_token(token).await {
         Ok(token) => token,
         Err(_) => {
             return status::Custom(
@@ -140,7 +139,7 @@ pub async fn create_store_role(
     store_role: Json<StoreRole>,
     token: RawToken,
 ) -> status::Custom<Value> {
-    let token = match VerifiedToken::from_raw(token).await {
+    let token = match validate_token(token).await {
         Ok(token) => token,
         Err(_) => {
             return status::Custom(
@@ -215,7 +214,7 @@ pub async fn update_store_role(
     store_role: Json<StoreRole>,
     token: RawToken,
 ) -> status::Custom<Value> {
-    let token = match VerifiedToken::from_raw(token).await {
+    let token = match validate_token(token).await {
         Ok(token) => token,
         Err(_) => {
             return status::Custom(
@@ -291,7 +290,7 @@ pub async fn delete_store_role(
     role_id: String,
     token: RawToken,
 ) -> status::Custom<Value> {
-    let token = match VerifiedToken::from_raw(token).await {
+    let token = match validate_token(token).await {
         Ok(token) => token,
         Err(_) => {
             return status::Custom(

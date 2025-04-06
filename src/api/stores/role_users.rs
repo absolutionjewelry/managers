@@ -1,5 +1,5 @@
 use crate::api::response::Response;
-use crate::api::token::{RawToken, VerifiedToken};
+use crate::api::token::{validate_token, RawToken};
 use crate::database::values::DatabaseValue;
 use crate::models::authentication::AuthenticationError;
 use crate::models::store_role_user::{StoreRoleUser, StoreRoleUserError};
@@ -15,7 +15,7 @@ pub async fn get_store_role_users(
     role_id: String,
     token: RawToken,
 ) -> status::Custom<Value> {
-    let _ = match VerifiedToken::from_raw(token).await {
+    let _ = match validate_token(token).await {
         Ok(token) => token,
         Err(_) => {
             return status::Custom(
@@ -65,7 +65,7 @@ pub async fn create_store_role_user(
     store_user: Json<StoreUser>,
     token: RawToken,
 ) -> status::Custom<Value> {
-    let _ = match VerifiedToken::from_raw(token).await {
+    let _ = match validate_token(token).await {
         Ok(token) => token,
         Err(_) => {
             return status::Custom(
@@ -117,7 +117,7 @@ pub async fn delete_store_role_user(
     user_id: String,
     token: RawToken,
 ) -> status::Custom<Value> {
-    let _ = match VerifiedToken::from_raw(token).await {
+    let _ = match validate_token(token).await {
         Ok(token) => token,
         Err(_) => {
             return status::Custom(

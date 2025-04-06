@@ -1,4 +1,4 @@
-use crate::api::token::{RawToken, VerifiedToken};
+use crate::api::token::{validate_token, RawToken};
 use crate::database::values::DatabaseValue;
 use crate::models::{
     authentication::{Authentication, AuthenticationError},
@@ -15,7 +15,6 @@ use rocket::serde::json::Json;
 use rocket::serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
-use time::{format_description::well_known::Iso8601, Duration, OffsetDateTime};
 use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -204,17 +203,7 @@ pub async fn login(authentication_request: Json<AuthenticationRequest>) -> statu
 /// "curl -X DELETE http://localhost:8000/api/auth/ -H 'Content-Type: application/json' -H 'Authorization: Bearer <token>'"
 #[delete("/")]
 pub async fn logout(token: RawToken) -> status::Custom<Value> {
-    if token.value.is_empty() {
-        return status::Custom(
-            Status::BadRequest,
-            serde_json::to_value(AuthenticationResponse::error(
-                AuthenticationError::SessionNotFound.into(),
-                AuthenticationError::SessionNotFound.to_string(),
-            ))
-            .unwrap(),
-        );
-    }
-    let token_value = match VerifiedToken::from_raw(token).await {
+    let token_value = match validate_token(token).await {
         Ok(token) => token,
         Err(_) => {
             return status::Custom(

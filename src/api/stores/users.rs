@@ -1,6 +1,5 @@
 use crate::api::response::Response;
-use crate::api::token::RawToken;
-use crate::api::token::VerifiedToken;
+use crate::api::token::{validate_token, RawToken};
 use crate::database::values::DatabaseValue;
 use crate::models::authentication::AuthenticationError;
 use crate::models::store::{Store, StoreError};
@@ -26,7 +25,7 @@ use rocket::serde::json::{Json, Value};
 /// "curl -X GET http://localhost:8000/api/stores/1/users -H 'Authorization: Bearer <token>'"
 #[get("/<store_id>/users")]
 pub async fn get_store_users(store_id: String, token: RawToken) -> status::Custom<Value> {
-    let token = match VerifiedToken::from_raw(token).await {
+    let token = match validate_token(token).await {
         Ok(token) => token,
         Err(_) => {
             return status::Custom(
@@ -97,7 +96,7 @@ pub async fn get_store_user(
     user_id: String,
     token: RawToken,
 ) -> status::Custom<Value> {
-    let token = match VerifiedToken::from_raw(token).await {
+    let token = match validate_token(token).await {
         Ok(token) => token,
         Err(_) => {
             return status::Custom(
@@ -174,7 +173,7 @@ pub async fn create_store_user(
     store_user: Json<StoreUser>,
     token: RawToken,
 ) -> status::Custom<Value> {
-    let token = match VerifiedToken::from_raw(token).await {
+    let token = match validate_token(token).await {
         Ok(token) => token,
         Err(_) => {
             return status::Custom(
@@ -246,7 +245,7 @@ pub async fn update_store_user(
     store_user: Json<StoreUser>,
     token: RawToken,
 ) -> status::Custom<Value> {
-    let token = match VerifiedToken::from_raw(token).await {
+    let token = match validate_token(token).await {
         Ok(token) => token,
         Err(_) => {
             return status::Custom(
@@ -336,7 +335,7 @@ pub async fn delete_store_user(
     user_id: String,
     token: RawToken,
 ) -> status::Custom<Value> {
-    let _ = match VerifiedToken::from_raw(token).await {
+    let _ = match validate_token(token).await {
         Ok(token) => token,
         Err(_) => {
             return status::Custom(
