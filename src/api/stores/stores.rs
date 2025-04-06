@@ -333,6 +333,7 @@ pub struct CreateStore {
 /// ```
 #[post("/", data = "<store>")]
 pub async fn create_store(store: Json<CreateStore>, token: RawToken) -> status::Custom<Value> {
+    // Validate the authentication token
     let token = match validate_token(token).await {
         Ok(token) => token,
         Err(_) => {
@@ -348,7 +349,7 @@ pub async fn create_store(store: Json<CreateStore>, token: RawToken) -> status::
     };
     let user_id = token.user_id;
 
-    // Does the store already exists?
+    // Check if a store with this name already exists for this user
     let exists_params = vec![
         ("owner_id", DatabaseValue::String(user_id.clone())),
         (
@@ -358,8 +359,9 @@ pub async fn create_store(store: Json<CreateStore>, token: RawToken) -> status::
     ];
     match find_one_resource_where_fields!(Store, exists_params).await {
         Ok(existing_store) => {
-            // If the store is archived, unarchive it and update the description
+            // Found an existing store - check if it's archived
             if existing_store.archived_at.is_some() {
+                // Store exists but is archived - unarchive it and update description
                 let update_params = vec![
                     ("archived_at", DatabaseValue::None),
                     (
@@ -369,6 +371,7 @@ pub async fn create_store(store: Json<CreateStore>, token: RawToken) -> status::
                 ];
                 match update_resource!(Store, existing_store.id, update_params).await {
                     Ok(updated_store) => {
+                        // Successfully unarchived and updated the store
                         return status::Custom(
                             Status::Ok,
                             serde_json::to_value(&Response::success(
@@ -379,6 +382,7 @@ pub async fn create_store(store: Json<CreateStore>, token: RawToken) -> status::
                         );
                     }
                     Err(err) => {
+                        // Failed to update the store
                         println!("Error updating store: {:?}", err);
                         return status::Custom(
                             Status::InternalServerError,
@@ -391,7 +395,7 @@ pub async fn create_store(store: Json<CreateStore>, token: RawToken) -> status::
                     }
                 }
             }
-            // If the store is not archived, return an error
+            // Store exists and is not archived - return error
             return status::Custom(
                 Status::BadRequest,
                 serde_json::to_value(&Response::error(
@@ -402,7 +406,7 @@ pub async fn create_store(store: Json<CreateStore>, token: RawToken) -> status::
             );
         }
         Err(_) => {
-            // If the store does not exist, create it
+            // No existing store found - create a new one
             let params = vec![
                 ("owner_id", DatabaseValue::String(user_id.clone())),
                 (
@@ -424,6 +428,7 @@ pub async fn create_store(store: Json<CreateStore>, token: RawToken) -> status::
                     .unwrap(),
                 ),
                 Err(err) => {
+                    // Failed to create the store
                     println!("Error creating store: {:?}", err);
                     status::Custom(
                         Status::InternalServerError,
