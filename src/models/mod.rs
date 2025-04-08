@@ -1,5 +1,7 @@
 pub mod authentication;
 pub mod backup_code;
+pub mod component;
+pub mod componentable;
 pub mod product;
 pub mod store;
 pub mod store_role;
