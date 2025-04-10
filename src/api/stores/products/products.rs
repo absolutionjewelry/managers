@@ -2,9 +2,8 @@ use crate::api::response::Response;
 use crate::api::token::{validate_token, RawToken};
 use crate::database::values::DatabaseValue;
 use crate::models::authentication::AuthenticationError;
-use crate::models::product::Product;
-use crate::models::product::ProductError;
 use crate::models::store::{Store, StoreError};
+use crate::models::store_product::{StoreProduct, StoreProductError};
 use crate::{
     delete_resource_where_fields, find_all_archived_resources_where_fields,
     find_all_resources_where_fields, find_all_unarchived_resources_where_fields,
@@ -13,6 +12,7 @@ use crate::{
 use rocket::http::Status;
 use rocket::response::status;
 use rocket::serde::json::{Json, Value};
+use serde::{Deserialize, Serialize};
 
 /// Get all products for a store (both archived and unarchived)
 ///
@@ -41,7 +41,7 @@ use rocket::serde::json::{Json, Value};
 /// ```
 
 #[get("/<store_id>/products")]
-pub async fn get_products(store_id: String, token: RawToken) -> status::Custom<Value> {
+pub async fn get_products(store_id: &str, token: RawToken) -> status::Custom<Value> {
     let token = match validate_token(token).await {
         Ok(token) => token,
         Err(_) => {
@@ -59,12 +59,13 @@ pub async fn get_products(store_id: String, token: RawToken) -> status::Custom<V
     let user_id = token.user_id;
 
     let store_params = vec![
-        ("id", DatabaseValue::String(store_id.clone())),
+        ("id", DatabaseValue::String(store_id.to_string())),
         ("owner_id", DatabaseValue::String(user_id.clone())),
     ];
     let store_id = match find_one_resource_where_fields!(Store, store_params).await {
         Ok(store) => store.id,
-        Err(_) => {
+        Err(err) => {
+            println!("Error fetching store: {:?}", err);
             return status::Custom(
                 Status::NotFound,
                 serde_json::to_value(&Response::error(
@@ -77,7 +78,7 @@ pub async fn get_products(store_id: String, token: RawToken) -> status::Custom<V
     };
 
     let product_params = vec![("store_id", DatabaseValue::String(store_id))];
-    match find_all_resources_where_fields!(Product, product_params).await {
+    match find_all_resources_where_fields!(StoreProduct, product_params).await {
         Ok(products) => status::Custom(
             Status::Ok,
             serde_json::to_value(&Response::success(
@@ -86,14 +87,17 @@ pub async fn get_products(store_id: String, token: RawToken) -> status::Custom<V
             ))
             .unwrap(),
         ),
-        Err(_) => status::Custom(
-            Status::NotFound,
-            serde_json::to_value(&Response::error(
-                anyhow::anyhow!(ProductError::ProductNotFound),
-                ProductError::ProductNotFound.to_string(),
-            ))
-            .unwrap(),
-        ),
+        Err(err) => {
+            println!("Error fetching products: {:?}", err);
+            status::Custom(
+                Status::NotFound,
+                serde_json::to_value(&Response::error(
+                    anyhow::anyhow!(StoreProductError::StoreProductNotFound),
+                    StoreProductError::StoreProductNotFound.to_string(),
+                ))
+                .unwrap(),
+            )
+        }
     }
 }
 
@@ -123,7 +127,7 @@ pub async fn get_products(store_id: String, token: RawToken) -> status::Custom<V
 ///   -H 'Authorization: Bearer {token}'
 /// ```
 #[get("/<store_id>/products/unarchived", rank = 2)]
-pub async fn get_unarchived_products(store_id: String, token: RawToken) -> status::Custom<Value> {
+pub async fn get_unarchived_products(store_id: &str, token: RawToken) -> status::Custom<Value> {
     let token = match validate_token(token).await {
         Ok(token) => token,
         Err(_) => {
@@ -141,7 +145,7 @@ pub async fn get_unarchived_products(store_id: String, token: RawToken) -> statu
     let user_id = token.user_id;
 
     let store_params = vec![
-        ("id", DatabaseValue::String(store_id.clone())),
+        ("id", DatabaseValue::String(store_id.to_string())),
         ("owner_id", DatabaseValue::String(user_id.clone())),
     ];
     let store_id = match find_one_resource_where_fields!(Store, store_params).await {
@@ -159,7 +163,7 @@ pub async fn get_unarchived_products(store_id: String, token: RawToken) -> statu
     };
 
     let product_params = vec![("store_id", DatabaseValue::String(store_id))];
-    match find_all_unarchived_resources_where_fields!(Product, product_params).await {
+    match find_all_unarchived_resources_where_fields!(StoreProduct, product_params).await {
         Ok(products) => status::Custom(
             Status::Ok,
             serde_json::to_value(&Response::success(
@@ -171,8 +175,8 @@ pub async fn get_unarchived_products(store_id: String, token: RawToken) -> statu
         Err(_) => status::Custom(
             Status::NotFound,
             serde_json::to_value(&Response::error(
-                anyhow::anyhow!(ProductError::ProductNotFound),
-                ProductError::ProductNotFound.to_string(),
+                anyhow::anyhow!(StoreProductError::StoreProductNotFound),
+                StoreProductError::StoreProductNotFound.to_string(),
             ))
             .unwrap(),
         ),
@@ -205,7 +209,7 @@ pub async fn get_unarchived_products(store_id: String, token: RawToken) -> statu
 ///   -H 'Authorization: Bearer {token}'
 /// ```
 #[get("/<store_id>/products/archived", rank = 1)]
-pub async fn get_archived_products(store_id: String, token: RawToken) -> status::Custom<Value> {
+pub async fn get_archived_products(store_id: &str, token: RawToken) -> status::Custom<Value> {
     let token = match validate_token(token).await {
         Ok(token) => token,
         Err(_) => {
@@ -223,7 +227,7 @@ pub async fn get_archived_products(store_id: String, token: RawToken) -> status:
     let user_id = token.user_id;
 
     let store_params = vec![
-        ("id", DatabaseValue::String(store_id.clone())),
+        ("id", DatabaseValue::String(store_id.to_string())),
         ("owner_id", DatabaseValue::String(user_id.clone())),
     ];
     let store_id = match find_one_resource_where_fields!(Store, store_params).await {
@@ -241,7 +245,7 @@ pub async fn get_archived_products(store_id: String, token: RawToken) -> status:
     };
 
     let product_params = vec![("store_id", DatabaseValue::String(store_id))];
-    match find_all_archived_resources_where_fields!(Product, product_params).await {
+    match find_all_archived_resources_where_fields!(StoreProduct, product_params).await {
         Ok(products) => status::Custom(
             Status::Ok,
             serde_json::to_value(&Response::success(
@@ -253,8 +257,8 @@ pub async fn get_archived_products(store_id: String, token: RawToken) -> status:
         Err(_) => status::Custom(
             Status::NotFound,
             serde_json::to_value(&Response::error(
-                anyhow::anyhow!(ProductError::ProductNotFound),
-                ProductError::ProductNotFound.to_string(),
+                anyhow::anyhow!(StoreProductError::StoreProductNotFound),
+                StoreProductError::StoreProductNotFound.to_string(),
             ))
             .unwrap(),
         ),
@@ -286,8 +290,8 @@ pub async fn get_archived_products(store_id: String, token: RawToken) -> status:
 /// ```
 #[get("/<store_id>/products/<product_id>", rank = 3)]
 pub async fn get_product(
-    store_id: String,
-    product_id: String,
+    store_id: &str,
+    product_id: &str,
     token: RawToken,
 ) -> status::Custom<Value> {
     let token = match validate_token(token).await {
@@ -307,11 +311,11 @@ pub async fn get_product(
     let user_id = token.user_id;
 
     let product_params = vec![
-        ("id", DatabaseValue::String(product_id)),
-        ("store_id", DatabaseValue::String(store_id)),
+        ("id", DatabaseValue::String(product_id.to_string())),
+        ("store_id", DatabaseValue::String(store_id.to_string())),
         ("owner_id", DatabaseValue::String(user_id)),
     ];
-    match find_one_resource_where_fields!(Product, product_params).await {
+    match find_one_resource_where_fields!(StoreProduct, product_params).await {
         Ok(product) => status::Custom(
             Status::Ok,
             serde_json::to_value(&Response::success(
@@ -323,12 +327,22 @@ pub async fn get_product(
         Err(_) => status::Custom(
             Status::NotFound,
             serde_json::to_value(&Response::error(
-                anyhow::anyhow!(ProductError::ProductNotFound),
-                ProductError::ProductNotFound.to_string(),
+                anyhow::anyhow!(StoreProductError::StoreProductNotFound),
+                StoreProductError::StoreProductNotFound.to_string(),
             ))
             .unwrap(),
         ),
     }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateProductRequest {
+    pub product_name: String,
+    pub product_description: String,
+    pub product_base_price: f64,
+    pub product_base_cost: f64,
+    pub product_base_quantity: f64,
 }
 
 /// Create a new product
@@ -371,8 +385,8 @@ pub async fn get_product(
 /// ```
 #[post("/<store_id>/products", data = "<product>")]
 pub async fn create_product(
-    store_id: String,
-    product: Json<Product>,
+    store_id: &str,
+    product: Json<CreateProductRequest>,
     token: RawToken,
 ) -> status::Custom<Value> {
     let token = match validate_token(token).await {
@@ -392,12 +406,13 @@ pub async fn create_product(
     let user_id = token.user_id;
 
     let store_params = vec![
-        ("id", DatabaseValue::String(store_id.clone())),
+        ("id", DatabaseValue::String(store_id.to_string())),
         ("owner_id", DatabaseValue::String(user_id.clone())),
     ];
     let store_id = match find_one_resource_where_fields!(Store, store_params).await {
         Ok(store) => store.id,
-        Err(_) => {
+        Err(err) => {
+            println!("Error fetching store: {:?}", err);
             return status::Custom(
                 Status::NotFound,
                 serde_json::to_value(&Response::error(
@@ -412,31 +427,29 @@ pub async fn create_product(
     let product = product.into_inner();
     let product_params = vec![
         ("store_id", DatabaseValue::String(store_id)),
-        ("owner_id", DatabaseValue::String(user_id)),
         (
             "product_name",
-            DatabaseValue::String(product.product_name.unwrap_or_default()),
+            DatabaseValue::String(product.product_name.clone()),
         ),
         (
             "product_description",
-            DatabaseValue::String(product.product_description.unwrap_or_default()),
+            DatabaseValue::String(product.product_description.clone()),
         ),
         (
             "product_base_price",
-            DatabaseValue::Float(product.product_base_price.unwrap_or_default().to_string()),
+            DatabaseValue::Float(product.product_base_price.to_string()),
+        ),
+        (
+            "product_base_cost",
+            DatabaseValue::Float(product.product_base_cost.to_string()),
         ),
         (
             "product_base_quantity",
-            DatabaseValue::Int(
-                product
-                    .product_base_quantity
-                    .unwrap_or_default()
-                    .to_string(),
-            ),
+            DatabaseValue::Float(product.product_base_quantity.to_string()),
         ),
     ];
 
-    match insert_resource!(Product, product_params).await {
+    match insert_resource!(StoreProduct, product_params).await {
         Ok(product) => status::Custom(
             Status::Ok,
             serde_json::to_value(&Response::success(
@@ -445,14 +458,17 @@ pub async fn create_product(
             ))
             .unwrap(),
         ),
-        Err(_) => status::Custom(
-            Status::InternalServerError,
-            serde_json::to_value(&Response::error(
-                anyhow::anyhow!(ProductError::ProductCreationFailed),
-                ProductError::ProductCreationFailed.to_string(),
-            ))
-            .unwrap(),
-        ),
+        Err(err) => {
+            println!("Error creating product: {:?}", err);
+            status::Custom(
+                Status::InternalServerError,
+                serde_json::to_value(&Response::error(
+                    anyhow::anyhow!(StoreProductError::StoreProductCreationFailed),
+                    StoreProductError::StoreProductCreationFailed.to_string(),
+                ))
+                .unwrap(),
+            )
+        }
     }
 }
 
@@ -498,9 +514,9 @@ pub async fn create_product(
 /// ```
 #[put("/<store_id>/products/<product_id>", data = "<product>")]
 pub async fn update_product(
-    store_id: String,
-    product_id: String,
-    product: Json<Product>,
+    store_id: &str,
+    product_id: &str,
+    product: Json<StoreProduct>,
     token: RawToken,
 ) -> status::Custom<Value> {
     let token = match validate_token(token).await {
@@ -520,7 +536,7 @@ pub async fn update_product(
     let user_id = token.user_id;
 
     let store_params = vec![
-        ("id", DatabaseValue::String(store_id.clone())),
+        ("id", DatabaseValue::String(store_id.to_string())),
         ("owner_id", DatabaseValue::String(user_id.clone())),
     ];
     let _ = match find_one_resource_where_fields!(Store, store_params).await {
@@ -560,8 +576,8 @@ pub async fn update_product(
             DatabaseValue::Int(product.product_base_quantity.unwrap().to_string()),
         ),
     ];
-    let product_id = product_id.clone();
-    match update_resource!(Product, product_id, product_params).await {
+    let product_id = product_id.to_string();
+    match update_resource!(StoreProduct, product_id, product_params).await {
         Ok(product) => status::Custom(
             Status::Ok,
             serde_json::to_value(&Response::success(
@@ -573,8 +589,8 @@ pub async fn update_product(
         Err(_) => status::Custom(
             Status::InternalServerError,
             serde_json::to_value(&Response::error(
-                anyhow::anyhow!(ProductError::ProductUpdateFailed),
-                ProductError::ProductUpdateFailed.to_string(),
+                anyhow::anyhow!(StoreProductError::StoreProductUpdateFailed),
+                StoreProductError::StoreProductUpdateFailed.to_string(),
             ))
             .unwrap(),
         ),
@@ -609,8 +625,8 @@ pub async fn update_product(
 /// ```
 #[delete("/<store_id>/products/<product_id>")]
 pub async fn delete_product(
-    store_id: String,
-    product_id: String,
+    store_id: &str,
+    product_id: &str,
     token: RawToken,
 ) -> status::Custom<Value> {
     let token = match validate_token(token).await {
@@ -630,7 +646,7 @@ pub async fn delete_product(
     let user_id = token.user_id;
 
     let store_params = vec![
-        ("id", DatabaseValue::String(store_id.clone())),
+        ("id", DatabaseValue::String(store_id.to_string())),
         ("owner_id", DatabaseValue::String(user_id.clone())),
     ];
     let store_id = match find_one_resource_where_fields!(Store, store_params).await {
@@ -648,10 +664,10 @@ pub async fn delete_product(
     };
 
     let product_params = vec![
-        ("id", DatabaseValue::String(product_id.clone())),
+        ("id", DatabaseValue::String(product_id.to_string())),
         ("store_id", DatabaseValue::String(store_id)),
     ];
-    match delete_resource_where_fields!(Product, product_params).await {
+    match delete_resource_where_fields!(StoreProduct, product_params).await {
         Ok(_) => status::Custom(
             Status::Ok,
             serde_json::to_value(&Response::success(
@@ -663,8 +679,8 @@ pub async fn delete_product(
         Err(_) => status::Custom(
             Status::InternalServerError,
             serde_json::to_value(&Response::error(
-                anyhow::anyhow!(ProductError::ProductDeletionFailed),
-                ProductError::ProductDeletionFailed.to_string(),
+                anyhow::anyhow!(StoreProductError::StoreProductDeletionFailed),
+                StoreProductError::StoreProductDeletionFailed.to_string(),
             ))
             .unwrap(),
         ),

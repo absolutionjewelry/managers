@@ -5,46 +5,40 @@ use sqlx::{postgres::PgRow, Error, Row};
 use time::OffsetDateTime;
 
 #[derive(Debug, Deserialize, Serialize)]
-pub enum ProductError {
-    ProductNotFound,
-    ProductCreationFailed,
-    ProductUpdateFailed,
-    ProductDeletionFailed,
+pub enum StoreProductError {
+    StoreProductNotFound,
+    StoreProductCreationFailed,
+    StoreProductUpdateFailed,
+    StoreProductDeletionFailed,
 }
 
-impl std::fmt::Display for ProductError {
+impl std::fmt::Display for StoreProductError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ProductError::ProductNotFound => write!(f, "Product not found"),
-            ProductError::ProductCreationFailed => write!(f, "Product creation failed"),
-            ProductError::ProductUpdateFailed => write!(f, "Product update failed"),
-            ProductError::ProductDeletionFailed => write!(f, "Product deletion failed"),
+            StoreProductError::StoreProductNotFound => write!(f, "Store product not found"),
+            StoreProductError::StoreProductCreationFailed => {
+                write!(f, "Store product creation failed")
+            }
+            StoreProductError::StoreProductUpdateFailed => write!(f, "Store product update failed"),
+            StoreProductError::StoreProductDeletionFailed => {
+                write!(f, "Store product deletion failed")
+            }
         }
     }
 }
 
-impl std::error::Error for ProductError {}
+impl std::error::Error for StoreProductError {}
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Product {
+pub struct StoreProduct {
     pub id: Option<String>,
     pub store_id: Option<String>,
-
-    #[serde(rename = "name")]
     pub product_name: Option<String>,
-
-    #[serde(rename = "description")]
     pub product_description: Option<String>,
-
-    #[serde(rename = "price")]
     pub product_base_price: Option<f64>,
-
-    #[serde(rename = "cost")]
     pub product_base_cost: Option<f64>,
-
-    #[serde(rename = "quantity")]
-    pub product_base_quantity: Option<i32>,
+    pub product_base_quantity: Option<f64>,
 
     #[serde(
         serialize_with = "serialize_offset_date_time",
@@ -65,9 +59,9 @@ pub struct Product {
     pub archived_at: Option<OffsetDateTime>,
 }
 
-impl DatabaseResource for Product {
+impl DatabaseResource for StoreProduct {
     fn from_row(row: &PgRow) -> Result<Self, Error> {
-        Ok(Product {
+        Ok(StoreProduct {
             id: row.get("id"),
             store_id: row.get("store_id"),
             product_name: row.get("product_name"),

@@ -230,7 +230,7 @@ pub async fn get_archived_stores(token: RawToken) -> status::Custom<Value> {
 ///   -H 'Authorization: Bearer your_token_here'
 /// ```
 #[get("/<store_id>", rank = 3)]
-pub async fn get_store(store_id: String, token: RawToken) -> status::Custom<Value> {
+pub async fn get_store(store_id: &str, token: RawToken) -> status::Custom<Value> {
     let token = match validate_token(token).await {
         Ok(token) => token,
         Err(_) => {
@@ -247,7 +247,7 @@ pub async fn get_store(store_id: String, token: RawToken) -> status::Custom<Valu
 
     let user_id = token.user_id;
     let params = vec![
-        ("id", DatabaseValue::String(store_id)),
+        ("id", DatabaseValue::String(store_id.to_string())),
         ("owner_id", DatabaseValue::String(user_id)),
     ];
     match find_one_resource_where_fields!(Store, params).await {
@@ -496,7 +496,7 @@ pub struct UpdateStore {
 /// ```
 #[put("/<store_id>", data = "<store>")]
 pub async fn update_store(
-    store_id: String,
+    store_id: &str,
     store: Json<UpdateStore>,
     token: RawToken,
 ) -> status::Custom<Value> {
@@ -526,7 +526,7 @@ pub async fn update_store(
         ),
         ("owner_id", DatabaseValue::String(user_id)),
     ];
-    let store_id = store_id.clone();
+    let store_id = store_id.to_string();
     match update_resource!(Store, store_id, params).await {
         Ok(_) => status::Custom(
             Status::Ok,

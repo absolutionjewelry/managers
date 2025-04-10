@@ -307,7 +307,10 @@ macro_rules! insert_resource {
             // The ? operator propagates any conversion errors
             match query.fetch_one(&pool).await {
                 Ok(row) => Ok(<$resource as DatabaseResource>::from_row(&row)?),
-                Err(e) => Err(e),
+                Err(e) => {
+                    println!("Error fetching row: {:?}", e);
+                    Err(e)
+                }
             }
         }
     }};
