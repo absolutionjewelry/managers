@@ -78,7 +78,7 @@ pub async fn get_products(store_id: &str, token: RawToken) -> status::Custom<Val
     };
 
     let product_params = vec![("store_id", DatabaseValue::String(store_id))];
-    match find_all_resources_where_fields!(StoreProduct, product_params).await {
+    match find_all_unarchived_resources_where_fields!(StoreProduct, product_params).await {
         Ok(products) => status::Custom(
             Status::Ok,
             serde_json::to_value(&Response::success(
