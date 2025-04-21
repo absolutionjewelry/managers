@@ -2,12 +2,11 @@ use crate::api::response::Response;
 use crate::api::token::{validate_token, RawToken};
 use crate::database::values::DatabaseValue;
 use crate::models::authentication::AuthenticationError;
-use crate::models::store::{Store, StoreError};
 use crate::models::store_gallery::{StoreGallery, StoreGalleryError};
 use crate::{
     delete_resource_where_fields, find_all_archived_resources_where_fields,
-    find_all_resources_where_fields, find_all_unarchived_resources_where_fields,
-    find_one_resource_where_fields, insert_resource, update_resource,
+    find_all_unarchived_resources_where_fields, find_one_resource_where_fields, insert_resource,
+    update_resource,
 };
 use rocket::http::Status;
 use rocket::response::status;
@@ -29,8 +28,6 @@ pub async fn get_galleries(store_id: &str, token: RawToken) -> status::Custom<Va
             );
         }
     };
-
-    let store_params = vec![("id", DatabaseValue::String(store_id.to_string()))];
 
     let gallery_params = vec![("store_id", DatabaseValue::String(store_id.to_string()))];
 
@@ -59,7 +56,7 @@ pub async fn get_galleries(store_id: &str, token: RawToken) -> status::Custom<Va
 
 #[get("/<store_id>/galleries/archived")]
 pub async fn get_archived_galleries(store_id: &str, token: RawToken) -> status::Custom<Value> {
-    let token = match validate_token(token).await {
+    let _ = match validate_token(token).await {
         Ok(token) => token,
         Err(_) => {
             return status::Custom(
@@ -72,8 +69,6 @@ pub async fn get_archived_galleries(store_id: &str, token: RawToken) -> status::
             );
         }
     };
-
-    let user_id = token.user_id;
 
     let gallery_params = vec![("store_id", DatabaseValue::String(store_id.to_string()))];
 
@@ -102,7 +97,7 @@ pub async fn get_archived_galleries(store_id: &str, token: RawToken) -> status::
 
 #[get("/<store_id>/galleries/unarchived")]
 pub async fn get_unarchived_galleries(store_id: &str, token: RawToken) -> status::Custom<Value> {
-    let token = match validate_token(token).await {
+    let _ = match validate_token(token).await {
         Ok(token) => token,
         Err(_) => {
             return status::Custom(
@@ -115,8 +110,6 @@ pub async fn get_unarchived_galleries(store_id: &str, token: RawToken) -> status
             );
         }
     };
-
-    let user_id = token.user_id;
 
     let gallery_params = vec![("store_id", DatabaseValue::String(store_id.to_string()))];
 
@@ -145,7 +138,7 @@ pub async fn get_unarchived_galleries(store_id: &str, token: RawToken) -> status
 
 #[get("/<store_id>/galleries/<id>", rank = 3)]
 pub async fn get_gallery(store_id: &str, id: &str, token: RawToken) -> status::Custom<Value> {
-    let token = match validate_token(token).await {
+    let _ = match validate_token(token).await {
         Ok(token) => token,
         Err(_) => {
             return status::Custom(
@@ -158,8 +151,6 @@ pub async fn get_gallery(store_id: &str, id: &str, token: RawToken) -> status::C
             );
         }
     };
-
-    let user_id = token.user_id;
 
     let gallery_params = vec![
         ("id", DatabaseValue::String(id.to_string())),

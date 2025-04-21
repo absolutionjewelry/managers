@@ -5,9 +5,8 @@ use crate::models::authentication::AuthenticationError;
 use crate::models::store_galleries_image::{StoreGalleriesImage, StoreGalleriesImageError};
 use crate::models::store_gallery::{StoreGallery, StoreGalleryError};
 use crate::{
-    delete_resource_where_fields, find_all_archived_resources_where_fields,
-    find_all_unarchived_resources_where_fields, find_one_resource_where_fields, insert_resource,
-    update_resource,
+    delete_resource_where_fields, find_all_unarchived_resources_where_fields,
+    find_one_resource_where_fields, insert_resource, update_resource,
 };
 use rocket::http::Status;
 use rocket::response::status;
