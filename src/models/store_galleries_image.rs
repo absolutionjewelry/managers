@@ -5,26 +5,26 @@ use sqlx::{postgres::PgRow, Error, Row};
 use time::OffsetDateTime;
 
 #[derive(Debug, Deserialize, Serialize)]
-pub enum StoreGalleryImageError {
-    StoreGalleryImageNotFound,
-    StoreGalleryImageCreationFailed,
-    StoreGalleryImageUpdateFailed,
-    StoreGalleryImageDeletionFailed,
+pub enum StoreGalleriesImageError {
+    StoreGalleriesImageNotFound,
+    StoreGalleriesImageCreationFailed,
+    StoreGalleriesImageUpdateFailed,
+    StoreGalleriesImageDeletionFailed,
 }
 
-impl std::fmt::Display for StoreGalleryImageError {
+impl std::fmt::Display for StoreGalleriesImageError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            StoreGalleryImageError::StoreGalleryImageNotFound => {
+            StoreGalleriesImageError::StoreGalleriesImageNotFound => {
                 write!(f, "Store gallery image not found")
             }
-            StoreGalleryImageError::StoreGalleryImageCreationFailed => {
+            StoreGalleriesImageError::StoreGalleriesImageCreationFailed => {
                 write!(f, "Store gallery image creation failed")
             }
-            StoreGalleryImageError::StoreGalleryImageUpdateFailed => {
+            StoreGalleriesImageError::StoreGalleriesImageUpdateFailed => {
                 write!(f, "Store gallery image update failed")
             }
-            StoreGalleryImageError::StoreGalleryImageDeletionFailed => {
+            StoreGalleriesImageError::StoreGalleriesImageDeletionFailed => {
                 write!(f, "Store gallery image deletion failed")
             }
         }
@@ -32,7 +32,7 @@ impl std::fmt::Display for StoreGalleryImageError {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct StoreGalleryImage {
+pub struct StoreGalleriesImage {
     pub id: Option<String>,
     pub store_id: Option<String>,
     pub store_gallery_id: Option<String>,
@@ -47,9 +47,9 @@ pub struct StoreGalleryImage {
     pub created_at: Option<OffsetDateTime>,
 }
 
-impl DatabaseResource for StoreGalleryImage {
+impl DatabaseResource for StoreGalleriesImage {
     fn from_row(row: &PgRow) -> Result<Self, Error> {
-        Ok(StoreGalleryImage {
+        Ok(StoreGalleriesImage {
             id: row.try_get("id")?,
             store_id: row.try_get("store_id")?,
             store_gallery_id: row.try_get("store_gallery_id")?,

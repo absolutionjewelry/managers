@@ -377,7 +377,7 @@ pub async fn create_store(store: Json<CreateStore>, token: RawToken) -> status::
                     ),
                 ];
                 match update_resource!(Store, existing_store.id, update_params).await {
-                    Ok(updated_store) => {}
+                    Ok(_) => {}
                     Err(err) => {
                         // Failed to update the store
                         println!("Error updating store: {:?}", err);

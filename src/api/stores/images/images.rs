@@ -2,12 +2,11 @@ use crate::api::response::Response;
 use crate::api::token::{validate_token, RawToken};
 use crate::database::values::DatabaseValue;
 use crate::models::authentication::AuthenticationError;
-use crate::models::store::{Store, StoreError};
 use crate::models::store_image::{StoreImage, StoreImageError};
 use crate::{
     delete_resource_where_fields, find_all_archived_resources_where_fields,
-    find_all_resources_where_fields, find_all_unarchived_resources_where_fields,
-    find_one_resource_where_fields, insert_resource, update_resource,
+    find_all_unarchived_resources_where_fields, find_one_resource_where_fields, insert_resource,
+    update_resource,
 };
 use rocket::http::Status;
 use rocket::response::status;
