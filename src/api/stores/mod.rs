@@ -1,3 +1,5 @@
+pub mod galleries;
+pub mod images;
 pub mod products;
 pub mod role_users;
 pub mod roles;

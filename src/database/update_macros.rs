@@ -123,7 +123,7 @@ macro_rules! update_resource {
                         query.push_str(&format!("{} = NULL", field));
                     }
                     // Handle string types (no casting needed)
-                    DatabaseValue::Str(_) | DatabaseValue::String(_) => {
+                    DatabaseValue::Str(_) | DatabaseValue::String(_) | DatabaseValue::Text(_) => {
                         query.push_str(&format!("{} = ${}", field, i + 1));
                     }
                     // Cast timestamp strings to TIMESTAMP type

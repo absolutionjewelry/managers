@@ -22,6 +22,9 @@ pub enum DatabaseValue {
     /// Represents an owned String value
     #[allow(dead_code)]
     String(String),
+    /// Represents an owned String value as a text type
+    #[allow(dead_code)]
+    Text(String),
     /// Represents an integer value stored as a String
     #[allow(dead_code)]
     Int(String),
@@ -54,6 +57,7 @@ impl<'q> Encode<'q, Postgres> for DatabaseValue {
             DatabaseValue::None => Ok(IsNull::Yes),
             DatabaseValue::Str(s) => Encode::<Postgres>::encode_by_ref(s, buf),
             DatabaseValue::String(s) => Encode::<Postgres>::encode_by_ref(s, buf),
+            DatabaseValue::Text(s) => Encode::<Postgres>::encode_by_ref(s, buf),
             DatabaseValue::Int(i) => Encode::<Postgres>::encode_by_ref(i, buf),
             DatabaseValue::Int64(i) => Encode::<Postgres>::encode_by_ref(i, buf),
             DatabaseValue::Float(f) => Encode::<Postgres>::encode_by_ref(f, buf),
@@ -69,6 +73,14 @@ impl Type<Postgres> for DatabaseValue {
     fn type_info() -> sqlx::postgres::PgTypeInfo {
         // Most general type that can handle all our variants
         sqlx::postgres::PgTypeInfo::with_name("text")
+    }
+
+    fn compatible(ty: &sqlx::postgres::PgTypeInfo) -> bool {
+        // OIDs for text-based types in PostgreSQL
+        let text_oids = [25, 1043, 1042, 19, 1042]; // text, varchar, char, name, bpchar
+        ty.oid()
+            .map(|oid| text_oids.contains(&oid.0))
+            .unwrap_or(false)
     }
 }
 

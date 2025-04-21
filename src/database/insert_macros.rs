@@ -264,7 +264,11 @@ macro_rules! insert_resource {
                     }
                     DatabaseValue::Str(_) | DatabaseValue::String(_) => {
                         // String types are automatically handled by PostgreSQL
-                        query.push_str(&format!("${}", i + 1));
+                        query.push_str(&format!("Cast(${} AS VARCHAR)", i + 1));
+                    }
+                    DatabaseValue::Text(_) => {
+                        // Text types are automatically handled by PostgreSQL
+                        query.push_str(&format!("Cast(${} AS TEXT)", i + 1));
                     }
                     DatabaseValue::DateTime(_) => {
                         // Timestamps need explicit casting from text

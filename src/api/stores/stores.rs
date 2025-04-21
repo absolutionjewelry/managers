@@ -3,6 +3,7 @@ use crate::api::token::{validate_token, RawToken};
 use crate::database::values::DatabaseValue;
 use crate::models::authentication::AuthenticationError;
 use crate::models::store::{Store, StoreError};
+use crate::models::store_gallery::{StoreGallery, StoreGalleryError, StoreGalleryType};
 use crate::{
     delete_resource_where_fields, find_all_archived_resources_where_fields,
     find_all_unarchived_resources_where_fields, find_one_resource_where_fields, insert_resource,
@@ -357,8 +358,14 @@ pub async fn create_store(store: Json<CreateStore>, token: RawToken) -> status::
             DatabaseValue::String(store.store_name.clone()),
         ),
     ];
-    match find_one_resource_where_fields!(Store, exists_params).await {
-        Ok(existing_store) => {
+
+    let existing_store = match find_one_resource_where_fields!(Store, exists_params).await {
+        Ok(existing_store) => Some(existing_store),
+        Err(_) => None,
+    };
+
+    match existing_store {
+        Some(existing_store) => {
             // Found an existing store - check if it's archived
             if existing_store.archived_at.is_some() {
                 // Store exists but is archived - unarchive it and update description
@@ -370,17 +377,7 @@ pub async fn create_store(store: Json<CreateStore>, token: RawToken) -> status::
                     ),
                 ];
                 match update_resource!(Store, existing_store.id, update_params).await {
-                    Ok(updated_store) => {
-                        // Successfully unarchived and updated the store
-                        return status::Custom(
-                            Status::Ok,
-                            serde_json::to_value(&Response::success(
-                                serde_json::json!(updated_store),
-                                Some("Store updated successfully".to_string()),
-                            ))
-                            .unwrap(),
-                        );
-                    }
+                    Ok(updated_store) => {}
                     Err(err) => {
                         // Failed to update the store
                         println!("Error updating store: {:?}", err);
@@ -395,17 +392,53 @@ pub async fn create_store(store: Json<CreateStore>, token: RawToken) -> status::
                     }
                 }
             }
-            // Store exists and is not archived - return error
+            // Find and unarchive the store gallery
+            let gallery_params = vec![
+                ("store_id", DatabaseValue::String(existing_store.id.clone())),
+                (
+                    "gallery_type",
+                    DatabaseValue::String(StoreGalleryType::Store.to_string()),
+                ),
+                (
+                    "gallery_type_id",
+                    DatabaseValue::String(existing_store.id.clone()),
+                ),
+            ];
+            let _ = match find_one_resource_where_fields!(StoreGallery, gallery_params).await {
+                Ok(gallery) => {
+                    // Gallery found - unarchive it
+                    let update_params = vec![("archived_at", DatabaseValue::None)];
+                    match update_resource!(StoreGallery, gallery.id, update_params).await {
+                        Ok(_) => (),
+                        Err(err) => {
+                            println!("Error unarchiving store gallery: {:?}", err);
+                            return status::Custom(
+                                Status::InternalServerError,
+                                serde_json::to_value(&Response::error(
+                                    anyhow::anyhow!(StoreGalleryError::StoreGalleryUpdateFailed),
+                                    StoreGalleryError::StoreGalleryUpdateFailed.to_string(),
+                                ))
+                                .unwrap(),
+                            );
+                        }
+                    };
+                    Some(gallery)
+                }
+                Err(err) => {
+                    println!("Error finding store gallery: {:?}", err);
+                    None
+                }
+            };
             return status::Custom(
-                Status::BadRequest,
-                serde_json::to_value(&Response::error(
-                    anyhow::anyhow!(StoreError::StoreNameAlreadyExists),
-                    StoreError::StoreNameAlreadyExists.to_string(),
+                Status::Ok,
+                serde_json::to_value(&Response::success(
+                    serde_json::json!(existing_store),
+                    Some("Store updated successfully".to_string()),
                 ))
                 .unwrap(),
             );
         }
-        Err(_) => {
+        None => {
             // No existing store found - create a new one
             let params = vec![
                 ("owner_id", DatabaseValue::String(user_id.clone())),
@@ -419,14 +452,57 @@ pub async fn create_store(store: Json<CreateStore>, token: RawToken) -> status::
                 ),
             ];
             match insert_resource!(Store, params).await {
-                Ok(_) => status::Custom(
-                    Status::Ok,
-                    serde_json::to_value(&Response::success(
-                        serde_json::json!(store.into_inner()),
-                        Some("Store created successfully".to_string()),
-                    ))
-                    .unwrap(),
-                ),
+                Ok(store) => {
+                    // Create the store gallery
+                    // let gallery_params = vec![
+                    //     ("store_id", DatabaseValue::String(store.id.clone())),
+                    //     (
+                    //         "gallery_type",
+                    //         DatabaseValue::String(StoreGalleryType::Store.to_string()),
+                    //     ),
+                    //     ("gallery_type_id", DatabaseValue::String(store.id.clone())),
+                    //     (
+                    //         "gallery_name",
+                    //         DatabaseValue::String(store.store_name.clone()),
+                    //     ),
+                    // ];
+                    // let _ = match insert_resource!(StoreGallery, gallery_params).await {
+                    //     Ok(gallery) => gallery,
+                    //     Err(err) => {
+                    //         println!("Error creating store gallery: {:?}", err);
+                    //         return status::Custom(
+                    //             Status::InternalServerError,
+                    //             serde_json::to_value(&Response::error(
+                    //                 anyhow::anyhow!(StoreGalleryError::StoreGalleryCreationFailed),
+                    //                 StoreGalleryError::StoreGalleryCreationFailed.to_string(),
+                    //             ))
+                    //             .unwrap(),
+                    //         );
+                    //     }
+                    // };
+                    match create_store_gallery(store.clone()).await {
+                        Ok(_) => (),
+                        Err(err) => {
+                            println!("Error creating store gallery: {:?}", err);
+                            return status::Custom(
+                                Status::InternalServerError,
+                                serde_json::to_value(&Response::error(
+                                    anyhow::anyhow!(StoreGalleryError::StoreGalleryCreationFailed),
+                                    StoreGalleryError::StoreGalleryCreationFailed.to_string(),
+                                ))
+                                .unwrap(),
+                            );
+                        }
+                    }
+                    return status::Custom(
+                        Status::Ok,
+                        serde_json::to_value(&Response::success(
+                            serde_json::json!(store),
+                            Some("Store created successfully".to_string()),
+                        ))
+                        .unwrap(),
+                    );
+                }
                 Err(err) => {
                     // Failed to create the store
                     println!("Error creating store: {:?}", err);
@@ -440,6 +516,28 @@ pub async fn create_store(store: Json<CreateStore>, token: RawToken) -> status::
                     )
                 }
             }
+        }
+    }
+}
+
+async fn create_store_gallery(store: Store) -> Result<(), StoreGalleryError> {
+    let gallery_params = vec![
+        ("store_id", DatabaseValue::String(store.id.clone())),
+        (
+            "gallery_name",
+            DatabaseValue::String(store.store_name.clone()),
+        ),
+        (
+            "gallery_type",
+            DatabaseValue::String(StoreGalleryType::Store.to_string()),
+        ),
+        ("gallery_type_id", DatabaseValue::String(store.id.clone())),
+    ];
+    match insert_resource!(StoreGallery, gallery_params).await {
+        Ok(_) => Ok(()),
+        Err(err) => {
+            println!("Error creating store gallery: {:?}", err);
+            Err(StoreGalleryError::StoreGalleryCreationFailed)
         }
     }
 }
